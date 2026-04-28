@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9;
+            font-family: Arial, sans-serif;
+            color: #333333;
+        }
+        .container {
+            width: 100%;
+            padding: 20px;
+        }
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .header {
+            background: #4a90e2;
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+            text-align: left;
+        }
+        .content h2 {
+            color: #4a90e2;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .content p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            background: #4a90e2;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .footer {
+            background: #f0f3f5;
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #888888;
+        }
+        @media (max-width: 600px) {
+            .content {
+                padding: 20px 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="email-wrapper">
+        <!-- HEADER -->
+        <div class="header">
+            <h1 th:text="${title}"></h1>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <span th:text="${message}"></span><br/>
+            Votre login : <b><span style = "color:red" th:text="${login}"></span></b><br/>
+            Votre mot de passe : <b><span style = "color:red"  th:text="${password}"></span></b>
+            <p style="text-align:center; font-size: 13px;">
+                <b>Le mot de passe devra être changé obligatoirement à la première connexion.</b>
+            </p>
+            <div style="text-align:center; margin: 30px 0;">
+                <a class="button" th:href="@{https://portailbac.ucad.sn/}">Cliquez pour confirmer la création</a>
+            </div>
+            <p style="font-size: 9px;">
+                Remarques :<br/>
+                - Si vous n’avez pas éffectué une demande de création de compte, ignorez cet email.<br/>
+                - Sinon, exécutez les instructions indiquées dans l’email.<br/>
+                Merci de ne pas répondre à cet email, car les messages reçus à cette adresse ne sont pas lus et ne reçoivent donc aucune réponse.
+            </p>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            &copy; <span>Office du Baccalauréat, Contact : 33 824 19 29, Tous droits réservés</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

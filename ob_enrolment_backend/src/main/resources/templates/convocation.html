@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Convocation - Baccalauréat</title>
+    <style>
+        /* ===== SERIES TABS STYLES ===== */
+        .series-tabs-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 2px solid #e2e8f0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .series-tabs-container::-webkit-scrollbar {
+            height: 2px;
+        }
+
+        .series-tabs-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .series-tabs-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        .series-tab {
+            position: relative;
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.975rem;
+            color: #fff;
+            background: #133461;
+            border: none;
+            border-radius: 5px;
+            border-right: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 20px;
+        }
+
+        .series-tab-active {
+            color: #fff;
+            background: #3b82f6;
+        }
+
+        .tab-badge {
+            background: #e2e8f0;
+            color: #475569;
+            border-radius: 20px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        /* ===== STYLES CONVOCATION ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f5f5;
+            font-family: "Arial", sans-serif;
+            font-weight: 400;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: #000;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 295mm;
+            background: white;
+            padding: 10mm;
+            font-size: 12px;
+            margin: 0 auto;
+            page-break-after: always;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .header .right {
+            text-align: right;
+        }
+
+        /* TITRES */
+        .title {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .rowTop {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .convocation {
+            font-style: italic;
+            font-size: 18px;
+        }
+
+        .serie {
+            border: 1px solid black;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            padding: 3px 10px;
+        }
+
+        /* GRID */
+        .grid {
+            display: grid;
+            grid-template-columns: 30% 45% 25%;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .field {
+            border: 0.3px solid #aaa;
+            border-radius: 12px;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .field p {
+            padding: 4px 8px;
+            margin: 0;
+        }
+
+        .contenu {
+            text-align: center;
+            font-weight: bold;
+            padding: 4px;
+        }
+
+        .sexe {
+            border: 0.3px solid #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sexe p {
+            padding: 4px 8px;
+            margin: 0;
+        }
+
+        .sexeNationalite {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            font-weight: bold;
+        }
+
+        /* CENTER */
+        .rounded-table-container {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .rounded-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .rounded-table th,
+        .rounded-table td {
+            border: 0.3px solid #334155;
+            padding: 0.25rem;
+            text-align: center;
+        }
+
+        .rounded-table th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+
+        .rounded-table td {
+            font-weight: 600;
+        }
+
+        .note {
+            padding: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        /* RIGHT */
+        .rightBox {
+            border: 1px solid black;
+            padding: 5px;
+            font-size: 11px;
+        }
+
+        .importantTitle {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* MIDDLE SECTION */
+        .middleSection {
+            margin-top: 10px;
+        }
+
+        .rappel {
+            margin-top: 5px;
+            font-size: 11px;
+        }
+
+        .secondGroup {
+            margin-top: 5px;
+            font-size: 13px;
+            text-align: justify;
+        }
+
+        /* TABLEAU EPREUVES */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 0.3px solid #ccc;
+            padding: 4px;
+            font-size: 12px;
+        }
+
+        th {
+            background: #e5e5e5;
+        }
+
+        /* FOOTER */
+        .footer {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        /* UNDERLINE */
+        .underline {
+            text-decoration: underline;
+            text-decoration-thickness: 4px;
+            text-underline-offset: 2px;
+        }
+
+        /* IMPRESSION */
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .page {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div th:each="candidat, iterStat : ${candidats}" class="page">
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            UNIVERSITE CHEIKH ANTA DIOP
+            <br />
+            DE DAKAR
+            <br />
+            <b>OFFICE DU BACCALAUREAT</b>
+        </div>
+        <div class="right">
+            REPUBLIQUE DU SENEGAL
+            <br />
+            Un Peuple - Un But - Une Foi
+        </div>
+    </div>
+
+    <h6 class="title">BACCALAUREAT DE L'ENSEIGNEMENT SECONDAIRE</h6>
+
+    <div class="rowTop">
+        <div class="convocation underline font-bold">CONVOCATION</div>
+        <div class="font-bold">
+            <h6 class="p-0 m-0">SESSION NORMALE 2025</h6>
+        </div>
+        <span class="serie w-3">
+                <h6 class="p-0 m-0">Série : <span th:text="${candidat.serie != null ? candidat.serie : '-'}"></span></h6>
+            </span>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid h-auto py-0">
+        <!-- LEFT -->
+        <div class="left h-auto">
+            <div>
+                <div class="field"><p>Prénom(s)</p></div>
+                <div class="contenu"><span th:text="${candidat.prenoms != null ? candidat.prenoms : '-'}"></span></div>
+            </div>
+            <div>
+                <div class="field"><p>Nom</p></div>
+                <div class="contenu"><span th:text="${candidat.nom != null ? candidat.nom : '-'}"></span></div>
+            </div>
+            <div>
+                <div class="field"><p>Date de Naissance</p></div>
+                <div class="contenu"><span th:text="${#dates.format(candidat.dateNaissance, 'dd/MM/yyyy')}"></span></div>
+            </div>
+            <div>
+                <div class="field"><p>Lieu de Naissance</p></div>
+                <div class="contenu"><span th:text="${candidat.lieuNaissance != null ? candidat.lieuNaissance : '-'}"></span></div>
+            </div>
+            <div>
+                <div class="field"><p>Etablissement fréquenté</p></div>
+                <div class="contenu"><span th:text="${candidat.etablissement?.name != null ? candidat.etablissement.name : '-'}"></span></div>
+            </div>
+            <div>
+                <div class="field"><p>Candidat</p></div>
+                <div class="contenu"><span th:text="${candidat.typeCandidat != null ? candidat.typeCandidat : '-'}"></span></div>
+            </div>
+            <div class="mb-0 pb-0">
+                <div class="field sexe">
+                    <p>Sexe</p>
+                    <p>Nationalité</p>
+                </div>
+                <div class="sexeNationalite py-0 mb-0">
+                    <span th:text="${candidat.sexe != null ? candidat.sexe : '-'}"></span>
+                    <span th:text="${candidat.nationalite != null ? candidat.nationalite : '-'}"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER -->
+        <div class="center">
+            <div class="rounded-table-container">
+                <table class="rounded-table">
+                    <thead>
+                    <tr>
+                        <th>N° Jury</th>
+                        <th>N° table</th>
+                        <th>Centre d'écrit</th>
+                        <th>N° Bât.</th>
+                        <th>N° Salle</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td th:text="${candidat.jury != null ? candidat.jury : '-'}"></td>
+                        <td th:text="${candidat.numeroTable != null ? candidat.numeroTable : '-'}"></td>
+                        <td th:text="${candidat.centreEcritParticulier != null ? candidat.centreEcritParticulier : (candidat.centreEcrit?.name != null ? candidat.centreEcrit.name : '-')}"></td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-content-between mt-3">
+                <div class="flex flex-column">
+                    <span class="font-bold underline">Matière(s) Optionnelle(s):</span>
+                    <div class="flex flex-column ml-4">
+                        <span th:each="opt : ${candidat.matieresOptionnelles}" th:text="${opt}"></span>
+                    </div>
+                </div>
+                <div class="flex flex-column">
+                    <span class="font-bold underline">E.P.S :</span>
+                    <span th:text="${candidat.eps == 'A' ? 'Apte' : (candidat.eps != null ? candidat.eps : '-')}"></span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-content-between mt-3">
+                <div class="flex flex-column">
+                    <span class="font-bold underline">Matière(s) facultative(s):</span>
+                    <div class="flex flex-column ml-4">
+                        <span th:each="fac : ${candidat.matieresFacultatives}" th:text="${fac}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note">
+                N.B : Toute information vous paraissant erronée doit être signalée au plus tard le Ven. 30 Mai 2025
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="rightBox">
+            <div class="importantTitle">TRES IMPORTANT</div>
+            <div class="flex flex-column px-3" style="font-size: 11px; line-height: 0.8rem;">
+                <span>Pendant toute la durée de la session, vous devez :</span>
+                <span>- Être en salle, muni de cette convocation et de votre pièce d'identité le matin à 7h15 et l'après-midi à 14h15. Aucun retardataire ne sera admis en salle.</span>
+                <span>- Retirer auprès du Président de jury votre relevé de notes, qui est indispensable pour le choix des épreuves du 2ème groupe.</span>
+                <span>- Retirer votre diplôme à l'Inspection d'Académie de votre région ou à l'Office du Baccalauréat.</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="middleSection">
+        <div class="rappel">
+            <p>Rappel: Le téléphone portable et autres appareils assimilés sont formellement interdits dans les centres d'examen.</p>
+        </div>
+        <div class="secondGroup">
+            En cas d'admissibilité au Second (2nd) groupe d'épreuves, vous aurez à choisir trois (03) matières pour la recomposition dont
+            <span class="font-bold underline">deux (02) dominantes et une (01) non-dominante</span>.
+        </div>
+    </div>
+
+    <!-- TABLEAU DES ÉPREUVES -->
+    <h5 class="pt-0 mt-1 mb-0 pb-0" style="font-size: 14px;">
+        <span class="underline">Planning de déroulement de l'examen</span> : Série <span th:text="${candidat.serie != null ? candidat.serie : '-'}"></span>
+    </h5>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Matière de l'épreuve</th>
+            <th>Date</th>
+            <th>Heure</th>
+            <th>Durée</th>
+            <th>Coef.</th>
+            <th>Nature</th>
+            <th>2nd groupe</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="epreuve, iterStat : ${candidat.epreuves}" th:style="${iterStat.index % 2 == 0 ? 'background: #fff' : 'background: #f3f4f6'}">
+            <td th:text="${epreuve.matiere?.name != null ? epreuve.matiere.name : '-'}"></td>
+            <td th:text="${epreuve.jourDebut?.name != null ? epreuve.jourDebut.name : '-'}"></td>
+            <td th:text="${epreuve.heureDebut?.heure != null ? epreuve.heureDebut.heure : '-'}"></td>
+            <td th:text="${epreuve.duree != null ? epreuve.duree : '-'}"></td>
+            <td th:text="${epreuve.coefficient != null ? epreuve.coefficient : '-'}"></td>
+            <td th:text="${epreuve.type != null ? epreuve.type : '-'}"></td>
+            <td th:text="${epreuve.autorisation != null ? (epreuve.autorisation ? 'OUI' : 'NON') : '-'} + '/' + ${epreuve.estDominant != null ? (epreuve.estDominant ? 'DOMINANTE' : 'Non-dominante') : '-'}"></td>
+        </tr>
+        <tr th:if="${candidat.epreuves == null or candidat.epreuves.empty}">
+            <td colspan="7" style="text-align: center; padding: 20px;">Aucune épreuve trouvée</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        SAINT LOUIS, le <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy')}"></span>
+    </div>
+</div>
+</body>
+</html>
