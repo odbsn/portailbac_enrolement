@@ -66,6 +66,13 @@ const InfoBlock = ({
   </div>
 );
 
+// Fonction pour obtenir le libellé correct selon l'index
+const getOptionLabel = (index: number): string => {
+  if (index === 0) return "LV1";
+  if (index === 1) return "LV2";
+  return `Sciences de la Nature(P.C ou SVT)`;
+};
+
 export default function EspaceCandidat() {
   const router = useRouter();
   const { safeNavigate } = useSafeNavigation();
@@ -227,6 +234,11 @@ export default function EspaceCandidat() {
     candidat?.ef1 && { nom: candidat.ef1 },
     candidat?.ef2 && { nom: candidat.ef2 },
   ].filter(Boolean);
+  const getFacultativeLabel = (index: number): string => {
+    if (index === 0) return "Liste A (Dessin, Couture, Musique, ...)";
+    if (index === 1) return "Liste B (Langues, ...)";
+    return `EF ${index + 1}`;
+  };
 
   return (
     <div className="espace-candidat-container min-h-screen bg-gray-50">
@@ -365,22 +377,25 @@ export default function EspaceCandidat() {
                         label="Établissement fréquenté"
                         value={candidat?.etablissementName}
                       />
-                      {/* Matières optionnelles */}
+
+                      {/* Matières optionnelles avec libellés corrects */}
                       {matieresOptionnelles.map((matiere: any, idx: number) => (
                         <InfoRow
                           key={`mo-${idx}`}
-                          label={`Matière optionnelle ${idx + 1}`}
+                          label={getOptionLabel(idx)}
                           value={matiere?.nom}
                         />
                       ))}
+
                       {/* Matières facultatives */}
                       {matieresFacultatives.map((matiere: any, idx: number) => (
                         <InfoRow
                           key={`ef-${idx}`}
-                          label={`Matière facultative ${idx + 1}`}
+                          label={getFacultativeLabel(idx)}
                           value={matiere?.nom}
                         />
                       ))}
+
                       {candidat?.centreMatFac1 && candidat?.libMatFac1 && (
                         <InfoRow
                           label={`Centre ${candidat.libMatFac1}`}
