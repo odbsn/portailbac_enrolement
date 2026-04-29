@@ -2,9 +2,8 @@ package com.officedubac.project.module.nouveauBachelier;
 
 import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.exception.ResourceAlreadyExists;
-import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierAudit;
-import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
-import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierResponse;
+import com.officedubac.project.models.Jury;
+import com.officedubac.project.module.nouveauBachelier.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -13,11 +12,13 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +27,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -161,61 +160,61 @@ public class NouveauBachelierServiceImp implements NouveauBachelierService {
             throw new BusinessResourceException("Erreur lors de la recherche du NouveauBachelier", e);
         }
     }
-    @Override
-    public List<String> importerDepuisExcel(InputStream inputStream) throws IOException {
-        List<String> logs = new ArrayList<>();
-        int ajoutCount = 0;
-        int updateCount = 0;
-
-        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
-            Sheet sheet = workbook.getSheetAt(0);
-
-            for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue; // Ignorer l'en-tête
-
-                String numeroTable = getCellValue(row.getCell(3));
-                if (numeroTable == null || numeroTable.isEmpty()) {
-                    logs.add("⚠️ Ligne " + (row.getRowNum() + 1) + ": Numéro de table vide. Ignoré.");
-                    continue;
-                }
-
-                NouveauBachelier bachelier = mongoTemplate.findOne(
-                        Query.query(Criteria.where("numeroTable").is(numeroTable)),
-                        NouveauBachelier.class
-                );
-
-                boolean isNew = (bachelier == null);
-                if (isNew) {
-                    bachelier = new NouveauBachelier();
-                    bachelier.setNumeroTable(numeroTable);
-                    ajoutCount++;
-                } else {
-                    updateCount++;
-                }
-
-                // Mise à jour des champs
-                bachelier.setTelephone(getCellValue(row.getCell(0)).replaceAll("\\s+", ""));
-                bachelier.setPrenoms(getCellValue(row.getCell(1)));
-                bachelier.setNom(getCellValue(row.getCell(2)));
-                bachelier.setResultat(getCellValue(row.getCell(4)));
-                bachelier.setMention(getCellValue(row.getCell(5)));
-
-                mongoTemplate.save(bachelier);
-
-                logs.add((isNew ? "✅ Ajout" : "♻️ Mise à jour")
-                        + " ligne " + (row.getRowNum() + 1)
-                        + " [Table: " + numeroTable + "]");
-            }
-            logs.add("=======================================");
-            logs.add("Total lignes ajoutées : " + ajoutCount);
-            logs.add("Total lignes mises à jour : " + updateCount);
-
-        } catch (Exception e) {
-            logs.add("❌ Erreur : " + e.getMessage());
-            e.printStackTrace();
-        }
-        return logs;
-    }
+//    @Override
+//    public List<String> importerDepuisExcel(InputStream inputStream) throws IOException {
+//        List<String> logs = new ArrayList<>();
+//        int ajoutCount = 0;
+//        int updateCount = 0;
+//
+//        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
+//            Sheet sheet = workbook.getSheetAt(0);
+//
+//            for (Row row : sheet) {
+//                if (row.getRowNum() == 0) continue; // Ignorer l'en-tête
+//
+//                String numeroTable = getCellValue(row.getCell(3));
+//                if (numeroTable == null || numeroTable.isEmpty()) {
+//                    logs.add("⚠️ Ligne " + (row.getRowNum() + 1) + ": Numéro de table vide. Ignoré.");
+//                    continue;
+//                }
+//
+//                NouveauBachelier bachelier = mongoTemplate.findOne(
+//                        Query.query(Criteria.where("numeroTable").is(numeroTable)),
+//                        NouveauBachelier.class
+//                );
+//
+//                boolean isNew = (bachelier == null);
+//                if (isNew) {
+//                    bachelier = new NouveauBachelier();
+//                    bachelier.setNumeroTable(numeroTable);
+//                    ajoutCount++;
+//                } else {
+//                    updateCount++;
+//                }
+//
+//                // Mise à jour des champs
+//                bachelier.setTelephone(getCellValue(row.getCell(0)).replaceAll("\\s+", ""));
+//                bachelier.setPrenoms(getCellValue(row.getCell(1)));
+//                bachelier.setNom(getCellValue(row.getCell(2)));
+//                bachelier.setResultat(getCellValue(row.getCell(4)));
+//                bachelier.setMention(getCellValue(row.getCell(5)));
+//
+//                mongoTemplate.save(bachelier);
+//
+//                logs.add((isNew ? "✅ Ajout" : "♻️ Mise à jour")
+//                        + " ligne " + (row.getRowNum() + 1)
+//                        + " [Table: " + numeroTable + "]");
+//            }
+//            logs.add("=======================================");
+//            logs.add("Total lignes ajoutées : " + ajoutCount);
+//            logs.add("Total lignes mises à jour : " + updateCount);
+//
+//        } catch (Exception e) {
+//            logs.add("❌ Erreur : " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//        return logs;
+//    }
 
     @Override
     public List<String> importerDepuisCsv(InputStream inputStream) throws IOException {
@@ -336,6 +335,144 @@ public class NouveauBachelierServiceImp implements NouveauBachelierService {
             throw new BusinessResourceException("not-valid-param", "Paramétre " + id + " non autorisé.", HttpStatus.BAD_REQUEST);
         }
 
+    }
+    // ── Parser le fichier Excel ──────────────────────────────────────────────────
+    private List<BulkImportRow> parseExcel(InputStream inputStream) throws IOException {
+        List<BulkImportRow> rows = new ArrayList<>();
+
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // skip en-tête
+
+                String numeroTable = getCellValue(row.getCell(3));
+                if (numeroTable == null || numeroTable.isBlank()) continue;
+
+                // 🆕 Jury lu depuis la colonne 6 (index 6)
+                String juryCode = getCellValue(row.getCell(6));
+
+                rows.add(BulkImportRow.builder()
+                        .telephone(getCellValue(row.getCell(0)).replaceAll("\\s+", ""))
+                        .prenoms(getCellValue(row.getCell(1)))
+                        .nom(getCellValue(row.getCell(2)))
+                        .numeroTable(numeroTable)
+                        .resultat(getCellValue(row.getCell(4)))
+                        .mention(getCellValue(row.getCell(5)))
+                        .juryCode(juryCode)   // 🆕 depuis la ligne
+                        .rowNum(row.getRowNum() + 1)
+                        .build());
+            }
+        }
+        return rows;
+    }
+    @Override
+    public ImportResult importerDepuisExcel(InputStream inputStream) throws IOException {
+
+        // 🆕 Plus de extraction du jury depuis nomFichier
+        //     Le jury est lu directement dans chaque ligne Excel
+        List<BulkImportRow> rows = parseExcel(inputStream);
+
+        if (rows.isEmpty()) {
+            return ImportResult.vide();
+        }
+
+        return executerUpsertBatch(rows);
+    }
+    private ImportResult executerUpsertBatch(List<BulkImportRow> rows) {
+
+        // ── 1. Récupérer les numéros de jury uniques du fichier
+        Set<String> juryNumeros = rows.stream()
+                .map(BulkImportRow::getJuryCode)
+                .filter(j -> j != null && !j.isBlank())
+                .collect(Collectors.toSet());
+
+        // ── 2. Charger tous les jurys en UNE seule requête MongoDB
+        Map<String, Jury> jurysParNumero = mongoTemplate
+                .find(Query.query(Criteria.where("numero").in(juryNumeros)), Jury.class)
+                .stream()
+                .collect(Collectors.toMap(Jury::getCode, j -> j));
+
+        // ── 3. Récupérer les bacheliers existants en UNE seule requête
+        List<String> numeros = rows.stream()
+                .map(BulkImportRow::getNumeroTable)
+                .collect(Collectors.toList());
+
+        Map<String, NouveauBachelier> existants = mongoTemplate
+                .find(Query.query(Criteria.where("numeroTable").in(numeros)), NouveauBachelier.class)
+                .stream()
+                .collect(Collectors.toMap(NouveauBachelier::getNumeroTable, b -> b));
+
+        // ── 4. Préparer le BulkOps
+        BulkOperations bulkOps = mongoTemplate.bulkOps(
+                BulkOperations.BulkMode.UNORDERED, NouveauBachelier.class
+        );
+
+        int nouveaux = 0, modifies = 0, inchanges = 0, juryIntrouvable = 0;
+        List<String> warnings = new ArrayList<>();
+        LocalDateTime maintenant = LocalDateTime.now();
+
+        for (BulkImportRow row : rows) {
+
+            // ── 5. Résoudre le Jury depuis la Map (pas de requête supplémentaire)
+            Jury jury = jurysParNumero.get(row.getJuryCode());
+            if (jury == null) {
+                warnings.add("⚠️ Ligne " + row.getRowNum()
+                        + " [Table: " + row.getNumeroTable()
+                        + "] — Jury introuvable: " + row.getJuryCode());
+                juryIntrouvable++;
+                continue;
+            }
+            NouveauBachelier existant = existants.get(row.getNumeroTable());
+            String nouveauHash = computeHash(row);
+
+            // ── 6. Sauter si rien n'a changé
+            if (existant != null && nouveauHash.equals(existant.getHashResultat())) {
+                inchanges++;
+                continue;
+            }
+            Query query = Query.query(
+                    Criteria.where("numeroTable").is(row.getNumeroTable())
+            );
+
+            Update update = new Update()
+                    .set("telephone",      row.getTelephone())
+                    .set("prenoms",        row.getPrenoms())
+                    .set("nom",            row.getNom())
+                    .set("resultat",       row.getResultat())
+                    .set("mention",        row.getMention())
+                    .set("jury",           jury)          // ✅ objet Jury complet embarqué
+                    .set("hashResultat",   nouveauHash)
+                    .set("dateImport",     maintenant)
+                    .set("dateModification", maintenant)
+                    .setOnInsert("numeroTable",  row.getNumeroTable())
+                    .setOnInsert("dateCreation", maintenant);
+
+            bulkOps.upsert(query, update);
+
+            if (existant == null) nouveaux++;
+            else modifies++;
+        }
+
+        // ── 7. Exécuter le batch
+        if (nouveaux + modifies > 0) {
+            bulkOps.execute();
+        }
+
+        return ImportResult.builder()
+                .nouveaux(nouveaux)
+                .modifies(modifies)
+                .inchanges(inchanges)
+                .juryIntrouvable(juryIntrouvable)
+                .warnings(warnings)
+                .total(rows.size())
+                .build();
+    }
+    private String computeHash(BulkImportRow row) {
+        String data = row.getResultat() + "|" + row.getMention()  + "|"
+                + row.getNom()      + "|" + row.getPrenoms()  + "|"
+                + row.getTelephone()+ "|" + row.getJuryCode(); // 🆕
+        return Integer.toHexString(data.hashCode());
     }
 
 

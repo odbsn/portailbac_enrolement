@@ -1,6 +1,7 @@
 package com.officedubac.project.module.nouveauBachelier.v1;
 
 import com.officedubac.project.module.nouveauBachelier.NouveauBachelierService;
+import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierResponse;
 import jakarta.validation.Valid;
@@ -66,27 +67,35 @@ public class NouveauBachelierResource {
 //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 //        }
 //    }
-    @PostMapping("/import")
-    public ResponseEntity<List<String>> importerPlusieursFichiersExcel(
-            @RequestParam("files") List<MultipartFile> files) {
+//    @PostMapping("/import")
+//    public ResponseEntity<List<String>> importerPlusieursFichiersExcel(
+//            @RequestParam("files") List<MultipartFile> files) {
+//
+//        List<String> logsTotaux = new ArrayList<>();
+//
+//        for (MultipartFile file : files) {
+//            if (file.isEmpty()) {
+//                logsTotaux.add("Le fichier " + file.getOriginalFilename() + " est vide. Ignoré.");
+//                continue;
+//            }
+//
+//            try (InputStream is = file.getInputStream()) {
+//                logsTotaux.add("== Fichier : " + file.getOriginalFilename() + " ==");
+//                List<String> logs = service.importerDepuisExcel(is);
+//                logsTotaux.addAll(logs);
+//            } catch (IOException e) {
+//                logsTotaux.add("Erreur sur le fichier " + file.getOriginalFilename() + " : " + e.getMessage());
+//            }
+//        }
+//        return ResponseEntity.ok(logsTotaux);
+//    }
 
-        List<String> logsTotaux = new ArrayList<>();
-
-        for (MultipartFile file : files) {
-            if (file.isEmpty()) {
-                logsTotaux.add("Le fichier " + file.getOriginalFilename() + " est vide. Ignoré.");
-                continue;
-            }
-
-            try (InputStream is = file.getInputStream()) {
-                logsTotaux.add("== Fichier : " + file.getOriginalFilename() + " ==");
-                List<String> logs = service.importerDepuisExcel(is);
-                logsTotaux.addAll(logs);
-            } catch (IOException e) {
-                logsTotaux.add("Erreur sur le fichier " + file.getOriginalFilename() + " : " + e.getMessage());
-            }
-        }
-        return ResponseEntity.ok(logsTotaux);
+    @PostMapping("/import/excel")
+    public ResponseEntity<ImportResult> importerExcel(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        ImportResult result = service.importerDepuisExcel(file.getInputStream());
+        log.info(result.toSummary());
+        return ResponseEntity.ok(result);
     }
     @PostMapping("/csv")
     public ResponseEntity<List<String>> uploadCsv(@RequestParam("file") MultipartFile file) {

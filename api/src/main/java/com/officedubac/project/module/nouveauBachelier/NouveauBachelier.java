@@ -32,5 +32,8 @@ public class NouveauBachelier {
    private Long utiModifie;
    @LastModifiedDate
    private LocalDateTime dateModification;
+   private String fichierSource;       // "1111.xlsx"
+   private LocalDateTime dateImport;   // dernière date d'import
+   private String hashResultat;
 
 }

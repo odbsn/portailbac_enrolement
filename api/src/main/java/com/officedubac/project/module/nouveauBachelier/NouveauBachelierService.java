@@ -1,6 +1,7 @@
 package com.officedubac.project.module.nouveauBachelier;
 
 import com.officedubac.project.exception.BusinessResourceException;
+import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierAudit;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierResponse;
@@ -19,6 +20,7 @@ public interface NouveauBachelierService {
     public NouveauBachelierResponse maj(NouveauBachelierRequest req, String id) throws NumberFormatException, NoSuchElementException, BusinessResourceException;
     public String del(String id) throws NumberFormatException, BusinessResourceException;
     public Optional <NouveauBachelierResponse> searchSimple(String numeroTable) throws BusinessResourceException;
-    public List<String> importerDepuisExcel(InputStream inputStream) throws IOException;
+//    public List<String> importerDepuisExcel(InputStream inputStream) throws IOException;
+    public ImportResult importerDepuisExcel(InputStream inputStream) throws IOException;
     List<String> importerDepuisCsv(InputStream inputStream) throws IOException;
 }
