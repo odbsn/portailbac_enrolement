@@ -333,6 +333,7 @@ export default function EspaceCandidat() {
                         icon="pi pi-download"
                         onClick={handleDownloadConvocation}
                         className="p-button-rounded"
+                        disabled={true}
                         style={{
                           background:
                             "linear-gradient(135deg, #2196f3 0%, #1565C0 100%)",

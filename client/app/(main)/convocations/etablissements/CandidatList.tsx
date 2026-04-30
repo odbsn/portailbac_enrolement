@@ -981,10 +981,11 @@ export default function CandidatsTabTable({
 
             <Button
               onClick={handleExportAllConvocations}
-              disabled={isExporting || isExportingZipBySeries}
+              /* disabled={isExporting || isExportingZipBySeries} */
               icon="pi pi-file-pdf"
               label="Exporter toutes les convocations"
               className="p-button-info"
+              disabled={true}
             />
           </div>
         </div>
