@@ -51,7 +51,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleEtablissementClick = () => {
-    handleNavigation("/connexion");
+    handleNavigation("/se-connecter");
   };
 
   const handleCandidatClick = () => {
