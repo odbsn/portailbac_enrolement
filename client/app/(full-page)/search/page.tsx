@@ -159,9 +159,9 @@ export default function AuthentificationCandidat() {
     );
   };
 
-  const sanitizeCodeEtablissement = (value: string): string => {
-    return value.replace(/[^A-Za-z]/g, "").toUpperCase();
-  };
+ const sanitizeCodeEtablissement = (value: string): string => {
+    return value.toUpperCase();
+};
   const sanitizeNumeroTable = (value: string): string => {
     return value.replace(/[^0-9]/g, "");
   };
