@@ -515,7 +515,18 @@ public class ConvocationPdfService {
             boolean isEvenRow = (rowIndex % 2 == 0);
 
             // ✅ MATIÈRE EN GRAS SI DOMINANTE
+            // ✅ MATIÈRE EN GRAS SI DOMINANTE + GESTION LV1/LV2
             String matiere = e.getMatiere() != null ? e.getMatiere().getName() : "-";
+            String type = e.getType() != null ? e.getType() : "";
+
+// Gestion spéciale pour LV1 et LV2
+            if ("LV1".equals(matiere) && "Écrit".equals(type)) {
+                matiere = "LV1 - Ecrit";
+            } else if ("LV2".equals(matiere) && "Écrit".equals(type)) {
+                matiere = "LV2 - Ecrit";
+            } else if ("LV1".equals(matiere) && ("Oral/TP".equals(type) || "Oral".equals(type))) {
+                matiere = "LV1 - Oral";
+            }
             Paragraph matiereParagraph;
             if (Boolean.TRUE.equals(e.getEstDominant())) {
                 matiere = "★ " + matiere;
@@ -1088,8 +1099,16 @@ public class ConvocationPdfService {
         for (EpreuveResponse e : epreuves) {
             boolean isEvenRow = (rowIndex % 2 == 0);
 
-            // ✅ MATIÈRE EN GRAS SI DOMINANTE
             String matiere = e.getMatiere() != null ? e.getMatiere().getName() : "-";
+            String type = e.getType() != null ? e.getType() : "";
+
+            if ("LV1".equals(matiere) && "Écrit".equals(type)) {
+                matiere = "LV1 - Ecrit";
+            } else if ("LV2".equals(matiere) && "Écrit".equals(type)) {
+                matiere = "LV2 - Ecrit";
+            } else if ("LV1".equals(matiere) && ("Oral/TP".equals(type) || "Oral".equals(type))) {
+                matiere = "LV1 - Oral";
+            }
             Paragraph matiereParagraph;
             if (Boolean.TRUE.equals(e.getEstDominant())) {
                 matiere = "★ " + matiere;
