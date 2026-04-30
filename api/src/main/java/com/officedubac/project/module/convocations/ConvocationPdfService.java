@@ -574,7 +574,6 @@ public class ConvocationPdfService {
 
             rowIndex++;
         }
-
         document.add(epreuvesTable);
 
         // ================= FOOTER =================
@@ -652,9 +651,9 @@ public class ConvocationPdfService {
 
     private List<String> getMatieresOptionnelles(CandidatFinis c) {
         List<String> options = new java.util.ArrayList<>();
-        if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- " + c.getMo1());
-        if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- " + c.getMo2());
-        if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- " + c.getMo3());
+        if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
+        if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- LV2 : " + c.getMo2());
+        if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- Sciences de la Nature(P.C ou SVT) : " + c.getMo3());
         return options;
     }
 
@@ -1085,7 +1084,6 @@ public class ConvocationPdfService {
         for (String h : tableHeaders) {
             epreuvesTable.addCell(createHeaderCell(h, 8, boldFont));
         }
-
         int rowIndex = 0;
         for (EpreuveResponse e : epreuves) {
             boolean isEvenRow = (rowIndex % 2 == 0);
@@ -1125,7 +1123,6 @@ public class ConvocationPdfService {
             // Coefficient
             String coefStr = e.getCoefficient() != null ? String.valueOf(e.getCoefficient()) : "-";
             epreuvesTable.addCell(createDataCell(coefStr, 8, isEvenRow));
-
             // ✅ NATURE EN GRAS
             String natureStr = e.getType() != null ? e.getType() : "-";
             Paragraph natureParagraph = new Paragraph(natureStr).setFont(boldFont).setFontSize(9); // TOUJOURS GRAS
@@ -1354,7 +1351,6 @@ public class ConvocationPdfService {
         document.close();
         return pdfOut.toByteArray();
     }
-
     /**
      * Nettoie un nom de fichier
      */
