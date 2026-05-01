@@ -352,7 +352,7 @@ public class ConvocationPdfService {
                 optionnellesCell.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
+                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(2));
                 }
             }
         }
@@ -503,7 +503,7 @@ public class ConvocationPdfService {
         planningTitle.setMarginTop(0);
         document.add(planningTitle);
         // ================= TABLEAU DES EPREUVES =================
-        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{25, 14, 10, 8, 6, 10, 27}))
+        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{40, 14, 6, 6, 6, 10, 18}))
                 .useAllAvailableWidth();
 
         String[] tableHeaders = {"Matière de l'épreuve", "Date", "Heure", "Durée", "Coef.", "Nature", "2nd groupe"};
@@ -675,10 +675,13 @@ public class ConvocationPdfService {
                 break;
 
             case "L1B":
-            case "L1A":
                 if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
                 if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- LV2 : " + c.getMo2());
                 if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- L.C : " + c.getMo3());
+                break;
+            case "L1A":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
+                if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- L.C : " + c.getMo2());
                 break;
 
             case "STEG":
@@ -959,7 +962,7 @@ public class ConvocationPdfService {
                 optionnellesCell.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
+                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(2));
                 }
             }
         }
@@ -1001,7 +1004,7 @@ public class ConvocationPdfService {
                 centerColumn.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    centerColumn.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
+                    centerColumn.add(new Paragraph(fac).setFontSize(9).setMarginLeft(2));
                 }
             }
         }
@@ -1110,7 +1113,7 @@ public class ConvocationPdfService {
         document.add(planningTitle);
 
         // TABLEAU DES EPREUVES
-        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{25, 14, 10, 8, 6, 10, 27}))
+        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{38, 14, 10, 8, 6, 10, 14}))
                 .useAllAvailableWidth();
 
         String[] tableHeaders = {"Matière de l'épreuve", "Date", "Heure", "Durée", "Coef.", "Nature", "2nd groupe"};
