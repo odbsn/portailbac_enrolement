@@ -103,7 +103,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/enrollment-cgs/**").hasAnyAuthority(Role.SCOLARITE.name(), Role.ADMIN.name())
                         .requestMatchers("/api/v1/stats/**").hasAnyAuthority(Role.ADMIN.name(), Role.SCOLARITE.name(), Role.INSPECTEUR_ACADEMIE.name(), Role.DEMSG.name(), Role.FINANCE_COMPTA.name())
                         .requestMatchers("/api/v1/candidats/**").hasAnyAuthority(Role.CHEF_ETABLISSEMENT.name(), Role.AGENT_DE_SAISIE.name(), Role.ADMIN.name())
-                        .requestMatchers("/api/v1/jours/**").hasAnyAuthority(Role.ADMIN.name())
+                        .requestMatchers("/api/v1/jours/**").permitAll()
                         .requestMatchers("/api/v1/heures/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/convocations/**").permitAll()
                         .requestMatchers("/api/v1/convocationMassive/**").hasAnyAuthority(Role.ADMIN.name())

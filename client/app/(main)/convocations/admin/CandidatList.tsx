@@ -21,8 +21,8 @@ import ConvocationMassivePrint, {
   ConvocationMassivePrintRef,
 } from "./allConvocations/ConvocationMassivePrint";
 import { useSerieStore } from "../etablissements/serieStore";
-import ConvocationButton from "../etablissements/ConvocationButton";
 import RegenerateConvocationButton from "./RegenerateConvocationButton";
+import ConvocationButton from "./ConvocationButtonAdmin";
 
 interface CandidatsTabTableProps {
   onViewCandidat?: (candidat: CandidatFinis) => void;

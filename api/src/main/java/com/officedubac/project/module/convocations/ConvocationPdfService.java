@@ -127,7 +127,7 @@ public class ConvocationPdfService {
         cellLeft.add(convocation);
 
 // Petit texte mention
-        Paragraph mentionImpression = new Paragraph("À imprimer impérativement")
+        Paragraph mentionImpression = new Paragraph("À imprimer obligatoirement")
                 .setFont(normalFont)
                 .setFontSize(9)
                 .setFontColor(ColorConstants.RED)
@@ -338,7 +338,7 @@ public class ConvocationPdfService {
             optionnellesCell.add(optLabel);
 
             for (String opt : getMatieresOptionnelles(c)) {
-                optionnellesCell.add(new Paragraph(opt).setFontSize(9).setMarginLeft(10));
+                optionnellesCell.add(new Paragraph(opt).setFontSize(9).setMarginLeft(5));
             }
         } else {
             Paragraph facLabel = new Paragraph("Matière(s) facultative(s):")
@@ -352,7 +352,7 @@ public class ConvocationPdfService {
                 optionnellesCell.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(10));
+                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
                 }
             }
         }
@@ -423,7 +423,8 @@ public class ConvocationPdfService {
                 .setTextAlignment(TextAlignment.JUSTIFIED);
 
         importantText.add("Pendant toute la durée de la session, vous devez :\n");
-        importantText.add("- Être en salle, muni de cette convocation et de votre pièce d'identité le matin à 7h15 et l'après-midi à 14h15. Aucun retardataire ne sera admis en salle.\n");
+        importantText.add("- Être en salle, muni de cette convocation et de votre pièce d'identité le matin à 7h15 et l'après-midi à 14h15.\n");
+        importantText.add("- Aucun retardataire ne sera admis en salle.\n");
         importantText.add("- Retirer auprès du Président de jury votre relevé de notes, qui est indispensable pour le choix des épreuves du 2ème groupe. Ce choix doit se faire dans la demi journée qui suit la proclamation des résultats.\n");
         importantText.add("- Retirer votre diplôme à l'Inspection d'Académie de votre région ou à l'Office du Baccalauréat à partir d'une date qui sera communiquée après l'examen.");
 
@@ -513,20 +514,8 @@ public class ConvocationPdfService {
         int rowIndex = 0;
         for (EpreuveResponse e : epreuves) {
             boolean isEvenRow = (rowIndex % 2 == 0);
-
             // ✅ MATIÈRE EN GRAS SI DOMINANTE
-            // ✅ MATIÈRE EN GRAS SI DOMINANTE + GESTION LV1/LV2
             String matiere = e.getMatiere() != null ? e.getMatiere().getName() : "-";
-            String type = e.getType() != null ? e.getType() : "";
-
-// Gestion spéciale pour LV1 et LV2
-            if ("LV1".equals(matiere) && "Écrit".equals(type)) {
-                matiere = "LV1 - Ecrit";
-            } else if ("LV2".equals(matiere) && "Écrit".equals(type)) {
-                matiere = "LV2 - Ecrit";
-            } else if ("LV1".equals(matiere) && ("Oral/TP".equals(type) || "Oral".equals(type))) {
-                matiere = "LV1 - Oral";
-            }
             Paragraph matiereParagraph;
             if (Boolean.TRUE.equals(e.getEstDominant())) {
                 matiere = "★ " + matiere;
@@ -575,11 +564,16 @@ public class ConvocationPdfService {
             }
             epreuvesTable.addCell(natureCell);
             // 2nd groupe
-            String secondGroupStr = "=== NON ===";
-            if (e.getType() != null && (e.getType().equals("Écrit") || e.getType().equals("Ecrit"))) {
-                String autorisation = Boolean.TRUE.equals(e.getAutorisation()) ? "OUI" : "NON";
-                String dominante = Boolean.TRUE.equals(e.getEstDominant()) ? "DOMINANTE" : "Non-dominante";
-                secondGroupStr = autorisation + " / " + dominante;
+            String secondGroupStr;
+            String autorisation = Boolean.TRUE.equals(e.getAutorisation()) ? "OUI" : "NON";
+            String dominante = Boolean.TRUE.equals(e.getEstDominant()) ? "DOMINANTE" : "Non-dominante";
+
+            if ("OUI".equals(autorisation) && "DOMINANTE".equals(dominante)) {
+                secondGroupStr = "OUI / DOMINANTE";
+            } else if ("OUI".equals(autorisation)) {
+                secondGroupStr = "OUI / Non-dominante";
+            } else {
+                secondGroupStr = "=== NON ===";
             }
             epreuvesTable.addCell(createDataCell(secondGroupStr, 8, isEvenRow));
 
@@ -662,25 +656,53 @@ public class ConvocationPdfService {
 
     private List<String> getMatieresOptionnelles(CandidatFinis c) {
         List<String> options = new java.util.ArrayList<>();
-        if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
-        if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- LV2 : " + c.getMo2());
-        if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- Sciences de la Nature(P.C ou SVT) : " + c.getMo3());
+        String serie = c.getSerie();
+
+        switch (serie) {
+            case "L2":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
+                if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- L.V.2 ou ECONOMIE : " + c.getMo2());
+                if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- Sciences de la Nature (P.C ou SVT) : " + c.getMo3());
+                break;
+
+            case "L'1":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
+                if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- LV2 : " + c.getMo2());
+                break;
+
+            case "STIDD":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- Enseign. de spécialité : " + c.getMo1());
+                break;
+
+            case "L1B":
+            case "L1A":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- LV1 : " + c.getMo1());
+                if (c.getMo2() != null && !c.getMo2().isEmpty()) options.add("- LV2 : " + c.getMo2());
+                if (c.getMo3() != null && !c.getMo3().isEmpty()) options.add("- L.C : " + c.getMo3());
+                break;
+
+            case "STEG":
+                if (c.getMo1() != null && !c.getMo1().isEmpty()) options.add("- Spécialité (projet) : " + c.getMo1());
+                break;
+
+            default:
+                // Cas par défaut ou autre séries
+                break;
+        }
+
         return options;
     }
 
     private List<String> getMatieresFacultatives(CandidatFinis c) {
         List<String> facultatives = new java.util.ArrayList<>();
-        if (c.getCentreMatFac1() != null && !c.getCentreMatFac1().isEmpty()) {
-            String lib = c.getLibMatFac1() != null ? c.getLibMatFac1() : "Matière 1";
-            facultatives.add("- " + lib + " : " + c.getCentreMatFac1());
+        if (c.getEf1() != null && !c.getEf1().isEmpty()) {
+            facultatives.add("- Liste A (Des,Cout.,Mus.,...) : " + c.getEf1());
         }
-        if (c.getCentreMatFac2() != null && !c.getCentreMatFac2().isEmpty()) {
-            String lib = c.getLibMatFac2() != null ? c.getLibMatFac2() : "Matière 2";
-            facultatives.add("- " + lib + " : " + c.getCentreMatFac2());
+        if (c.getEf2() != null && !c.getEf2().isEmpty()) {
+            facultatives.add("- Liste B (Langues...) : " + c.getEf2());
         }
         return facultatives;
     }
-
     // ========== MÉTHODE OPTIMISÉE AVEC CACHE ==========
     public Mono<byte[]> generateConvocation(String numeroTable) {
         return epreuveService.findByNumeroTable(numeroTable)
@@ -749,7 +771,7 @@ public class ConvocationPdfService {
         cellLeft.add(convocation);
 
 // Petit texte mention
-        Paragraph mentionImpression = new Paragraph("À imprimer impérativement")
+        Paragraph mentionImpression = new Paragraph("À imprimer obligatoirement")
                 .setFont(normalFont)
                 .setFontSize(9)
                 .setFontColor(ColorConstants.RED)
@@ -937,7 +959,7 @@ public class ConvocationPdfService {
                 optionnellesCell.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(10));
+                    optionnellesCell.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
                 }
             }
         }
@@ -979,7 +1001,7 @@ public class ConvocationPdfService {
                 centerColumn.add(new Paragraph("Aucune matière facultative choisie").setFontSize(9).setMarginLeft(10));
             } else {
                 for (String fac : facultatives) {
-                    centerColumn.add(new Paragraph(fac).setFontSize(9).setMarginLeft(10));
+                    centerColumn.add(new Paragraph(fac).setFontSize(9).setMarginLeft(5));
                 }
             }
         }
@@ -1100,15 +1122,6 @@ public class ConvocationPdfService {
             boolean isEvenRow = (rowIndex % 2 == 0);
 
             String matiere = e.getMatiere() != null ? e.getMatiere().getName() : "-";
-            String type = e.getType() != null ? e.getType() : "";
-
-            if ("LV1".equals(matiere) && "Écrit".equals(type)) {
-                matiere = "LV1 - Ecrit";
-            } else if ("LV2".equals(matiere) && "Écrit".equals(type)) {
-                matiere = "LV2 - Ecrit";
-            } else if ("LV1".equals(matiere) && ("Oral/TP".equals(type) || "Oral".equals(type))) {
-                matiere = "LV1 - Oral";
-            }
             Paragraph matiereParagraph;
             if (Boolean.TRUE.equals(e.getEstDominant())) {
                 matiere = "★ " + matiere;
@@ -1156,12 +1169,18 @@ public class ConvocationPdfService {
             }
             epreuvesTable.addCell(natureCell);
             // 2nd groupe
-            String secondGroupStr = "=== NON ===";
-            if (e.getType() != null && (e.getType().equals("Écrit") || e.getType().equals("Ecrit"))) {
-                String autorisation = Boolean.TRUE.equals(e.getAutorisation()) ? "OUI" : "NON";
-                String dominante = Boolean.TRUE.equals(e.getEstDominant()) ? "DOMINANTE" : "Non-dominante";
-                secondGroupStr = autorisation + " / " + dominante;
+            String secondGroupStr;
+            String autorisation = Boolean.TRUE.equals(e.getAutorisation()) ? "OUI" : "NON";
+            String dominante = Boolean.TRUE.equals(e.getEstDominant()) ? "DOMINANTE" : "Non-dominante";
+
+            if ("OUI".equals(autorisation) && "DOMINANTE".equals(dominante)) {
+                secondGroupStr = "OUI / DOMINANTE";
+            } else if ("OUI".equals(autorisation)) {
+                secondGroupStr = "OUI / Non-dominante";
+            } else {
+                secondGroupStr = "=== NON ===";
             }
+
             epreuvesTable.addCell(createDataCell(secondGroupStr, 8, isEvenRow));
 
             rowIndex++;
