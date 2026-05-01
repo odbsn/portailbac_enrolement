@@ -20,9 +20,10 @@ import DetailCandidatDialog from "./DetailCandidatDialog";
 import ConvocationMassivePrint, {
   ConvocationMassivePrintRef,
 } from "./allConvocations/ConvocationMassivePrint";
-import { useSerieStore } from "../etablissements/serieStore";
-import ConvocationButton from "../etablissements/ConvocationButton";
+
 import RegenerateConvocationButton from "./RegenerateConvocationButton";
+import { useSerieStore } from "@/app/(main)/convocations/etablissements/serieStore";
+import ConvocationButton from "@/app/(main)/convocations/etablissements/ConvocationButton";
 
 interface CandidatsTabTableProps {
   onViewCandidat?: (candidat: CandidatFinis) => void;
