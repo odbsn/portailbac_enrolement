@@ -1113,7 +1113,7 @@ public class ConvocationPdfService {
         document.add(planningTitle);
 
         // TABLEAU DES EPREUVES
-        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{38, 14, 10, 8, 6, 10, 14}))
+        Table epreuvesTable = new Table(UnitValue.createPercentArray(new float[]{40, 14, 6, 6, 6, 10, 18}))
                 .useAllAvailableWidth();
 
         String[] tableHeaders = {"Matière de l'épreuve", "Date", "Heure", "Durée", "Coef.", "Nature", "2nd groupe"};
