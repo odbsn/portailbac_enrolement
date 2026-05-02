@@ -66,23 +66,12 @@ export default function DetailCandidatDialog({
     candidat.mo1,
     candidat.mo2,
     candidat.mo3,
+  ].filter(Boolean);
+
+  const matieresFacultatives = [
     candidat.ef1,
     candidat.ef2,
   ].filter(Boolean);
-
-  const matieresFacultatives = [];
-  if (candidat.nbMatFacult && candidat.nbMatFacult > 0) {
-    if (candidat.centreMatFac1)
-      matieresFacultatives.push({
-        name: candidat.libMatFac1 || "Matière 1",
-        centre: candidat.centreMatFac1,
-      });
-    if (candidat.centreMatFac2)
-      matieresFacultatives.push({
-        name: candidat.libMatFac2 || "Matière 2",
-        centre: candidat.centreMatFac2,
-      });
-  }
 
   const footer = (
     <div className="flex justify-content-end gap-3">
@@ -93,12 +82,6 @@ export default function DetailCandidatDialog({
         text
         className="p-button-text"
       />
-      {/* <ConvocationButton
-        numeroTable={candidat.numeroTable}
-        label="Télécharger la convocation"
-        icon="pi pi-file-pdf"
-        circular={false} // Désactive le mode circulaire
-      /> */}
     </div>
   );
 
@@ -312,21 +295,23 @@ export default function DetailCandidatDialog({
           </>
         )}
 
-        {/* Section Matières facultatives */}
+        {/* Section Matières facultatives - Maintenant comme les optionnelles */}
         {matieresFacultatives.length > 0 && (
           <>
             <Divider className="my-3" />
-            <div className="section">
+            <div className="section py-3">
               <div className="section-title">
                 <i className="pi pi-plus-circle mr-2" />
                 Matières facultatives
               </div>
-              <div className="flex flex-wrap gap-3 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {matieresFacultatives.map((matiere, index) => (
-                  <div key={index} className="flex align-items-center gap-2">
-                    <i className="pi pi-check-circle text-primary" />
-                    <span className="font-bold text-xl">{matiere.name}</span>
-                  </div>
+                  <Chip
+                    key={index}
+                    label={matiere}
+                    icon="pi pi-check"
+                    className="bg-primary-50"
+                  />
                 ))}
               </div>
             </div>
