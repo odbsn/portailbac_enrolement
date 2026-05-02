@@ -67,11 +67,63 @@ const InfoBlock = ({
 );
 
 // Fonction pour obtenir le libellé correct selon l'index
-const getOptionLabel = (index: number): string => {
-  if (index === 0) return "LV1";
-  if (index === 1) return "LV2";
-  return `Sciences de la Nature(P.C ou SVT)`;
+// const getOptionLabel = (index: number): string => {
+//   if (index === 0) return "LV1";
+//   if (index === 1) return "LV2";
+//   return `Sciences de la Nature(P.C ou SVT)`;
+// };
+
+
+// Fonction pour obtenir le libellé correct selon l'index et la série
+const getOptionLabel = (index: number, serie?: string): string => {
+  switch (serie) {
+    case "L2":
+      if (index === 0) return "LV1";
+      if (index === 1) return "L.V.2 ou ECONOMIE";
+      if (index === 2) return "Sciences de la Nature (P.C ou SVT)";
+      break;
+
+    case "L'1":
+      if (index === 0) return "LV1";
+      if (index === 1) return "LV2";
+      break;
+
+    case "STIDD":
+      if (index === 0) return "Enseign. de spécialité";
+      break;
+
+    case "L1B":
+      if (index === 0) return "LV1";
+      if (index === 1) return "LV2";
+      if (index === 2) return "L.C";
+      break;
+
+    case "L1A":
+      if (index === 0) return "LV1";
+      if (index === 1) return "L.C";
+      break;
+
+    case "STEG":
+      if (index === 0) return "Spécialité (projet)";
+      break;
+
+    default:
+      // Cas par défaut
+      if (index === 0) return "LV1";
+      if (index === 1) return "LV2";
+      if (index === 2) return "Sciences de la Nature (P.C ou SVT)";
+      break;
+  }
+  
+  return `Option ${index + 1}`;
 };
+
+// // Fonction pour obtenir le libellé des matières facultatives
+// const getFacultativeLabel = (index: number): string => {
+//   if (index === 0) return "Liste A (Dessin, Couture, Musique, ...)";
+//   if (index === 1) return "Liste B (Langues, ...)";
+//   return `EF ${index + 1}`;
+// };
 
 export default function EspaceCandidat() {
   const router = useRouter();
@@ -383,7 +435,7 @@ export default function EspaceCandidat() {
                       {matieresOptionnelles.map((matiere: any, idx: number) => (
                         <InfoRow
                           key={`mo-${idx}`}
-                          label={getOptionLabel(idx)}
+                          label={getOptionLabel(idx, candidat?.serie)}
                           value={matiere?.nom}
                         />
                       ))}
