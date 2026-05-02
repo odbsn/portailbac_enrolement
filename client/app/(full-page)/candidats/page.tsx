@@ -449,7 +449,7 @@ export default function EspaceCandidat() {
                         />
                       ))}
 
-                      {candidat?.centreMatFac1 && candidat?.libMatFac1 && (
+                      {/* {candidat?.centreMatFac1 && candidat?.libMatFac1 && (
                         <InfoRow
                           label={`Centre ${candidat.libMatFac1}`}
                           value={candidat.centreMatFac1}
@@ -460,7 +460,7 @@ export default function EspaceCandidat() {
                           label={`Centre ${candidat.libMatFac2}`}
                           value={candidat.centreMatFac2}
                         />
-                      )}
+                      )} */}
                     </InfoBlock>
 
                     {/* Bloc 3: Informations de la candidature */}
