@@ -80,6 +80,15 @@ public class JourInitialisationService {
                 .build();
         jourRepository.save(lafac);
         log.debug("Jour créé: JLAFAC - type: FACULTATIVE");
+        Jour jprjt = Jour.builder()
+                .code("JPRJT")
+                .name("")
+                .date(null)
+                .ordre(1500)  // Entre EPS (1000) et FACULTATIVE (2000)
+                .type("PRJT")
+                .build();
+        jourRepository.save(jprjt);
+        log.debug("Jour créé: JPRJT - type: PRJT");
 
         Jour lbfac = Jour.builder()
                 .code("JLBFAC")
@@ -117,6 +126,7 @@ public class JourInitialisationService {
 
         // 5. Mettre à jour LBFAC (type = FACULTATIVE)
         updatedCount += updateJourByTypeAndCode("FACULTATIVE", "JLBFAC", request.getDateLBFAC());
+        updatedCount += updateJourByTypeAndCode("PRJT", "JPRJT", request.getDateJPRJT());
 
         log.info("{} jours mis à jour avec succès", updatedCount);
     }

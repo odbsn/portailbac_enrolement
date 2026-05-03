@@ -17,5 +17,6 @@ public class JourInitialisationRequest {
     private LocalDate dateBacTechniqueStart;  // Date de début du bac technique
     private LocalDate dateEPS;                // Date de l'épreuve EPS
     private LocalDate dateLAFAC;              // Date de l'épreuve LAFAC
-    private LocalDate dateLBFAC;              // Date de l'épreuve LBFAC
+    private LocalDate dateLBFAC;
+    private LocalDate dateJPRJT;// Date de l'épreuve LBFAC
 }
