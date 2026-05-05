@@ -14,7 +14,7 @@ public interface AuthenticationService {
 
     User updatePassword(String email) throws MessagingException;
 
-    String changedPassword(String usr_id, ChangedPasswordDTO changedPasswordDTO);
+    String changedPassword(ChangedPasswordDTO changedPasswordDTO);
 
     JwtAuthenticationResponse signin(SignInDTO signInDTO) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException;
 

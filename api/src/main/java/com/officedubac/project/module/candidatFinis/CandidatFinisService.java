@@ -25,10 +25,12 @@ public interface CandidatFinisService {
             String keyword,
             String serie,
             String jury,
+            String numeroDossier,
             String typeCandidat,
             String statutResultat,
             String sexe,
             String nationalite,
+            String etablissementCode,
             Pageable pageable);
 
     // Méthodes pour l'utilisateur connecté
@@ -37,10 +39,12 @@ public interface CandidatFinisService {
             String keyword,
             String serie,
             String jury,
+            String numeroDossier,
             String typeCandidat,
             String statutResultat,
             String sexe,
             String nationalite,
+            String etablissementCode,
             Pageable pageable);
     CandidatFinisResponse getByIdByUtilisateurConnecte(String id);
     PageResponse<CandidatFinisResponse> getBySerieByUtilisateurConnecte(String serieCode, Pageable pageable);

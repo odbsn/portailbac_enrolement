@@ -49,7 +49,7 @@ public class ConvocationPdfService {
         return new Cell()
                 .add(new Paragraph(text)
                         .setFont(font)
-                        .setFontSize(9)
+                        .setFontSize(8)
                         .setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(new DeviceGray(0.92f))
                 .setBorder(new SolidBorder(ColorConstants.BLACK, 0.5f))
@@ -57,13 +57,14 @@ public class ConvocationPdfService {
                 .setPadding(2)
                 .setMarginBottom(0);
     }
+
     private Paragraph createValue(String text, PdfFont font) {
         return new Paragraph(text)
                 .setFont(font)
-                .setFontSize(9)
+                .setFontSize(8)
                 .setTextAlignment(TextAlignment.CENTER)
                 .setMarginTop(0)
-                .setMarginBottom(1);
+                .setMarginBottom(0);
     }
     private String value(String v) {
         return v == null ? "-" : v;
@@ -96,7 +97,7 @@ public class ConvocationPdfService {
         // ================= HEADER =================
         Table header = new Table(UnitValue.createPercentArray(new float[]{50, 50}))
                 .useAllAvailableWidth()
-                .setMarginBottom(2);
+                .setMarginBottom(0);
 
         header.addCell(createNoBorderCell(
                 "UNIVERSITE CHEIKH ANTA DIOP DE DAKAR\nOFFICE DU BACCALAUREAT", 9, false));
@@ -245,7 +246,7 @@ public class ConvocationPdfService {
         document.add(headerGrid);
 
         // ================= GRID 3 COLONNES =================
-        Table grid = new Table(UnitValue.createPercentArray(new float[]{30, 45, 25}))
+        Table grid = new Table(UnitValue.createPercentArray(new float[]{30, 52, 18}))
                 .useAllAvailableWidth()
                 .setMarginBottom(0)
                 .setMarginTop(0);
@@ -298,7 +299,7 @@ public class ConvocationPdfService {
                 .setPaddingRight(5)
                 .setMarginRight(5);
 
-        Table miniTable = new Table(UnitValue.createPercentArray(new float[]{20, 20, 35, 10, 15}))
+        Table miniTable = new Table(UnitValue.createPercentArray(new float[]{12, 15, 61, 10, 12}))
                 .useAllAvailableWidth();
 
         String[] miniHeaders = {"N° Jury", "N° table", "Centre d'écrit", "N° Bât.", "N° Salle"};
@@ -312,7 +313,7 @@ public class ConvocationPdfService {
 
         miniTable.addCell(createDataCell(c.getJury() != null ? c.getJury() : "-", 8));
         miniTable.addCell(createDataCell(c.getNumeroTable() != null ? c.getNumeroTable() : "-", 8));
-        miniTable.addCell(createDataCell(centreEcrit, 8));
+        miniTable.addCell(createDataCell(centreEcrit, 7));
         miniTable.addCell(createDataCell("-", 8));
         miniTable.addCell(createDataCell("-", 8));
 
@@ -418,7 +419,7 @@ public class ConvocationPdfService {
                 .setFontSize(10));
 
         Paragraph importantText = new Paragraph()
-                .setFontSize(8)
+                .setFontSize(6)
                 .setMultipliedLeading(1.2f)
                 .setTextAlignment(TextAlignment.JUSTIFIED);
 
@@ -426,7 +427,7 @@ public class ConvocationPdfService {
         importantText.add("- Être en salle, muni de cette convocation et de votre pièce d'identité le matin à 7h15 et l'après-midi à 14h15.\n");
         importantText.add("- Aucun retardataire ne sera admis en salle.\n");
         importantText.add("- Retirer auprès du Président de jury votre relevé de notes, qui est indispensable pour le choix des épreuves du 2ème groupe. Ce choix doit se faire dans la demi journée qui suit la proclamation des résultats.\n");
-        importantText.add("- Retirer votre diplôme à l'Inspection d'Académie de votre région ou à l'Office du Baccalauréat à partir d'une date qui sera communiquée après l'examen.");
+        importantText.add("- Retirer votre diplôme dans les centres de délivrance de votre région à partir d'une date qui sera communiquée après l'examen.");
 
         rightColumn.add(importantText);
         grid.addCell(rightColumn);
@@ -442,8 +443,8 @@ public class ConvocationPdfService {
         // ================= SECTION EPS =================
         Table epsSection = new Table(UnitValue.createPercentArray(new float[]{60, 40}))
                 .useAllAvailableWidth()
-                .setMarginTop(1)
-                .setMarginBottom(1);
+                .setMarginTop(0)
+                .setMarginBottom(0);
 
         Cell epsLeft = new Cell()
                 .setBorderTop(new SolidBorder(ColorConstants.BLACK, 1))
@@ -743,7 +744,7 @@ public class ConvocationPdfService {
         // ================= HEADER =================
         Table header = new Table(UnitValue.createPercentArray(new float[]{50, 50}))
                 .useAllAvailableWidth()
-                .setMarginBottom(2);
+                .setMarginBottom(0);
 
         header.addCell(createNoBorderCell(
                 "UNIVERSITE CHEIKH ANTA DIOP DE DAKAR\nOFFICE DU BACCALAUREAT", 9, false));
@@ -855,7 +856,7 @@ public class ConvocationPdfService {
         document.add(headerGrid);
 
         // ================= GRID 3 COLONNES =================
-        Table grid = new Table(UnitValue.createPercentArray(new float[]{30, 45, 25}))
+        Table grid = new Table(UnitValue.createPercentArray(new float[]{30, 52, 18}))
                 .useAllAvailableWidth()
                 .setMarginBottom(0)
                 .setMarginTop(0);
@@ -908,7 +909,7 @@ public class ConvocationPdfService {
                 .setPaddingRight(5)
                 .setMarginRight(5);
 
-        Table miniTable = new Table(UnitValue.createPercentArray(new float[]{20, 20, 35, 10, 15}))
+        Table miniTable = new Table(UnitValue.createPercentArray(new float[]{12, 15, 61, 10, 12}))
                 .useAllAvailableWidth();
 
         String[] miniHeaders = {"N° Jury", "N° table", "Centre d'écrit", "N° Bât.", "N° Salle"};
@@ -922,7 +923,7 @@ public class ConvocationPdfService {
 
         miniTable.addCell(createDataCell(c.getJury() != null ? c.getJury() : "-", 8));
         miniTable.addCell(createDataCell(c.getNumeroTable() != null ? c.getNumeroTable() : "-", 8));
-        miniTable.addCell(createDataCell(centreEcrit, 8));
+        miniTable.addCell(createDataCell(centreEcrit, 7));
         miniTable.addCell(createDataCell("-", 8));
         miniTable.addCell(createDataCell("-", 8));
 
@@ -1028,14 +1029,14 @@ public class ConvocationPdfService {
                 .setFontSize(10));
 
         Paragraph importantText = new Paragraph()
-                .setFontSize(8)
+                .setFontSize(6)
                 .setMultipliedLeading(1.2f)
                 .setTextAlignment(TextAlignment.JUSTIFIED);
 
         importantText.add("Pendant toute la durée de la session, vous devez :\n");
         importantText.add("- Être en salle, muni de cette convocation et de votre pièce d'identité le matin à 7h15 et l'après-midi à 14h15. Aucun retardataire ne sera admis en salle.\n");
         importantText.add("- Retirer auprès du Président de jury votre relevé de notes, qui est indispensable pour le choix des épreuves du 2ème groupe. Ce choix doit se faire dans la demi journée qui suit la proclamation des résultats.\n");
-        importantText.add("- Retirer votre diplôme à l'Inspection d'Académie de votre région ou à l'Office du Baccalauréat à partir d'une date qui sera communiquée après l'examen.");
+        importantText.add("- Retirer votre diplôme dans les centres de délivrance de votre région à partir d'une date qui sera communiquée après l'examen.");
 
         rightColumn.add(importantText);
         grid.addCell(rightColumn);
@@ -1051,8 +1052,8 @@ public class ConvocationPdfService {
         // SECTION EPS
         Table epsSection = new Table(UnitValue.createPercentArray(new float[]{60, 40}))
                 .useAllAvailableWidth()
-                .setMarginTop(1)
-                .setMarginBottom(1);
+                .setMarginTop(0)
+                .setMarginBottom(0);
 
         Cell epsLeft = new Cell()
                 .setBorderTop(new SolidBorder(ColorConstants.BLACK, 1))

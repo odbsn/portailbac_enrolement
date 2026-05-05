@@ -53,8 +53,6 @@ const ChangedPassword = () => {
         return 'faible';
     };
 
-    
-
     const formik = useFormik({
         initialValues: {
             usr_password: '',
@@ -84,7 +82,7 @@ const ChangedPassword = () => {
                 // Remplace cette partie avec ta logique API
                 console.log('Mot de passe changé :', changedPasswordDTO);
                 console.log('User :', user?.id);
-                const response = await ParametrageService.changedPassword(user?.id, changedPasswordDTO);
+                const response = await ParametrageService.changedPassword(changedPasswordDTO);
                 console.log(response);
                 if (response === "Le mot de passe a été mis à jour avec succés.")
                 {
@@ -109,7 +107,6 @@ const ChangedPassword = () => {
     });
 
     return (
-        <ProtectedRoute allowedRoles={['ADMIN', 'SCOLARITE', 'AGENT_DE_SAISIE', 'RECEPTIONNISTE', 'CHEF_ETABLISSEMENT', 'VIGNETTES_COUPONS', 'AUTORISATION_RECEPTION', 'INSPECTEUR_ACADEMIE', 'FINANCE_COMPTA', 'DEMSG']}>
             <form onSubmit={formik.handleSubmit} className="p-4">
                 <Toast ref={toast} />
                 <div className="flex h-screen bg-white">
@@ -321,7 +318,6 @@ const ChangedPassword = () => {
             </form>
 
            
-        </ProtectedRoute>
     );
 };
 

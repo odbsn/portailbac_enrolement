@@ -168,6 +168,8 @@ export interface FilterParams {
   serie?: string;
   jury?: string;
   typeCandidat?: string;
+  etablissementCode?: string;
+  numeroDossier?:string;
   statutResultat?: string;
   sexe?: string;
   nationalite?: string;
@@ -258,6 +260,8 @@ const initialState = {
     jury: "",
     typeCandidat: "",
     statutResultat: "",
+    etablissementCode: "", 
+    numeroDossier:"",
     sexe: "",
     nationalite: "",
     page: 0,

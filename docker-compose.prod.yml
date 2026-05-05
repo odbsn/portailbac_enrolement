@@ -1,0 +1,153 @@
+version: '3.9'
+
+services:
+  # --- Backend Spring Boot principal : PJBAC ---
+  # spring-app-pjbac:
+  #   build:
+  #     context: ./pjbac_refonte/api
+  #     dockerfile: Dockerfile
+  #   container_name: spring-app-pjbac
+  #   ports:
+  #     - "8201:8201"
+  #   environment:
+  #    SPRING_APPLICATION_JSON: >
+  #     {
+  #       "spring.data.mongodb.uri": "mongodb://officedubac:off%24ce%40Acteurs%232026@196.1.95.113:28765/office_du_bac?authSource=admin&authMechanism=SCRAM-SHA-256",
+  #       "FICHIER_UPLOAD_DIR": "/app/uploads"
+  #     }
+  #   volumes:
+  #     - uploads_data:/app/uploads
+  #   networks:
+  #     - app_network
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+
+  # --- Frontend Vue.js (PJBAC) ---
+  # client-app-pjbac:
+  #   build:
+  #     context: ./pjbac_refonte/client
+  #     dockerfile: Dockerfile
+  #   container_name: client-app-pjbac
+  #   ports:
+  #     - "3001:80"
+  #   depends_on:
+  #     - spring-app-pjbac
+  #   networks:
+  #     - app_network
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+
+  # --- Frontend Next.js (PJBAC) ---
+  # client-app-pjbac:
+  #   build:
+  #     context: ./pjbac_refonte/client
+  #     dockerfile: Dockerfile
+  #   container_name: client-app-pjbac
+  #   ports:
+  #     - "3001:80"
+  #   environment:
+  #     NODE_ENV: production
+  #   depends_on:
+  #     - spring-app-pjbac
+  #   networks:
+  #     - app_network
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+
+  # --- Backend 2 : OB Enrolment Acteurs (MongoDB) ---
+  spring-app-enrolememnt:
+   build:
+    context: ./api
+    dockerfile: Dockerfile
+   container_name: spring-app-enrolememnt
+   ports:
+    - "8080:8080"
+   environment:
+    SPRING_APPLICATION_JSON: >
+      {
+        "spring.data.mongodb.uri": "mongodb://mongo_superadmin:MongoAdmin.d29x003nq5m!%40%235053@196.1.95.120:27018/office_du_bac?authSource=admin&authMechanism=SCRAM-SHA-256",
+        "FICHIER_UPLOAD_DIR": "/app/uploads"
+      }
+   volumes:
+    - uploads_data:/app/uploads
+   networks:
+    - app_network
+   extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+  # --- Frontend Next.js (enrolememnt) ---
+  client-app-enrolememnt:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client-app-enrolememnt
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - spring-app-enrolememnt
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # --- cAdvisor ---
+  # cadvisor:
+  #   image: google/cadvisor:latest
+  #   container_name: cadvisor
+  #   ports:
+  #     - "8082:8080"
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   networks:
+  #     - app_network
+
+  # --- Prometheus ---
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #   networks:
+  #     - app_network
+
+  # --- Grafana ---
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3008:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   networks:
+  #     - app_network
+
+  # --- Portainer ---
+  # portainer:
+  #   image: portainer/portainer-ce
+  #   container_name: portainer
+  #   restart: always
+  #   ports:
+  #     - "9000:9000"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - portainer_data:/data
+  #   networks:
+  #     - app_network
+
+volumes:
+  uploads_data:
+    driver: local
+  portainer_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
