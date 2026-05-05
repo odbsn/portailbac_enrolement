@@ -22,8 +22,8 @@ public class ChangePwdController
     @Operation(summary="Service de changement du mot de passe")
     @PutMapping("/changed-password")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<String> updatePassword(@RequestParam String usrId, @RequestBody ChangedPasswordDTO changedPasswordDTO)
+    public ResponseEntity<String> updatePassword(@RequestBody ChangedPasswordDTO changedPasswordDTO)
     {
-        return ResponseEntity.ok(authenticationService.changedPassword(usrId, changedPasswordDTO));
+        return ResponseEntity.ok(authenticationService.changedPassword(changedPasswordDTO));
     }
 }

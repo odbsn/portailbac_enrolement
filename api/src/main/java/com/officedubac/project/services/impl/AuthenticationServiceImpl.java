@@ -60,10 +60,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     //A la premiere connexion
-    public String changedPassword(String usrId, ChangedPasswordDTO changedPasswordDTO)
+    public String changedPassword(ChangedPasswordDTO changedPasswordDTO)
     {
         // Retrieve the existing Utilisateur from the repository
-        User existingUser = userRepository.findById(usrId).orElse(null);
+        //User existingUser = userRepository.findById(usrId).orElse(null);
+        User existingUser = getCurrentUser();
         boolean matches = passwordEncoder.matches(changedPasswordDTO.getUsr_password(), existingUser.getPassword());
 
         if (matches)

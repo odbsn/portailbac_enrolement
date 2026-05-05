@@ -558,12 +558,10 @@ export const ParametrageService = {
       });
   },
 
-  changedPassword(idUsr, changedPasswordDTO) 
+  changedPassword(changedPasswordDTO) 
   {
-    console.log(idUsr)
-    return axiosInstance.put('/security/changed-password', changedPasswordDTO, {
-      params: { usrId: idUsr }
-    })
+    //console.log(idUsr)
+    return axiosInstance.put('/security/changed-password', changedPasswordDTO)
       .then(response => {
         console.log('User mis à jour avec succès:', response.data);
         return response.data;

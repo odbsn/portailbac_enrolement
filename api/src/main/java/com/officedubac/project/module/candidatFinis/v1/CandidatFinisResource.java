@@ -153,6 +153,7 @@ public class CandidatFinisResource {
             @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
             @Parameter(description = "Série") @RequestParam(required = false) String serie,
             @Parameter(description = "Jury") @RequestParam(required = false) String jury,
+            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
             @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
             @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
             @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
@@ -160,11 +161,11 @@ public class CandidatFinisResource {
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         log.info("GET /api/v1/candidats/all - Get all candidats with pagination and epreuves");
-        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
+        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, numeroDossier: {},typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
+                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
 
         return ResponseEntity.ok(responses);
     }
@@ -185,6 +186,7 @@ public class CandidatFinisResource {
             @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
             @Parameter(description = "Série") @RequestParam(required = false) String serie,
             @Parameter(description = "Jury") @RequestParam(required = false) String jury,
+            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
             @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
             @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
             @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
@@ -193,7 +195,7 @@ public class CandidatFinisResource {
 
         log.info("GET /api/v1/candidats/filters - Get candidats with filters");
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
         return ResponseEntity.ok(responses);
     }
 
@@ -227,6 +229,7 @@ public class CandidatFinisResource {
             @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
             @Parameter(description = "Série") @RequestParam(required = false) String serie,
             @Parameter(description = "Jury") @RequestParam(required = false) String jury,
+            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
             @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
             @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
             @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
@@ -234,11 +237,11 @@ public class CandidatFinisResource {
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         log.info("GET /api/v1/candidats/me - Get candidats of connected user with epreuves");
-        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
+        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, numeroDossier: {},typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
+                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
 
         return ResponseEntity.ok(responses);
     }
@@ -260,6 +263,7 @@ public class CandidatFinisResource {
             @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
             @Parameter(description = "Série") @RequestParam(required = false) String serie,
             @Parameter(description = "Jury") @RequestParam(required = false) String jury,
+            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
             @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
             @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
             @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
@@ -268,7 +272,7 @@ public class CandidatFinisResource {
 
         log.info("GET /api/v1/candidats/me/filters - Get candidats of connected user with filters");
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury, numeroDossier,typeCandidat, statutResultat, sexe, nationalite, pageable);
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/export")
