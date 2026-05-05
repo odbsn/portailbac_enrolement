@@ -71,6 +71,7 @@ export default function CandidatsTabTable({
   const [selectedCandidat, setSelectedCandidat] =
     useState<CandidatFinis | null>(null);
   const [selectedSerieCode, setSelectedSerieCode] = useState<string>("");
+  const [etablissementCodeFilter, setEtablissementCodeFilter] = useState<string>("");
   const [rows, setRows] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
   const [convocationSerie, setConvocationSerie] = useState<string>("");
@@ -597,6 +598,41 @@ export default function CandidatsTabTable({
                       background: "transparent",
                     }}
                   />
+                </div>
+                <div
+                  style={{
+                    width: "220px",
+                    height: "35px",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 10px",
+                    gap: "4px",
+                    border: "1px solid #3b82f6",
+                    borderRadius: "999px",
+                    background: "#fff",
+                  }}
+                >
+                  <i className="pi pi-building" style={{ fontSize: "14px", color: "#6b7280" }} />
+                  <input
+                    type="text"
+                    value={etablissementCodeFilter}
+                    onChange={(e) => setEtablissementCodeFilter(e.target.value)}
+                    placeholder="Code établissement..."
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "14px",
+                      background: "transparent",
+                    }}
+                  />
+                  {etablissementCodeFilter && (
+                    <i
+                      className="pi pi-times"
+                      style={{ fontSize: "12px", color: "#6b7280", cursor: "pointer" }}
+                      onClick={() => setEtablissementCodeFilter("")}
+                    />
+                  )}
                 </div>
 
                 <Button
