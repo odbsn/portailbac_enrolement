@@ -15,7 +15,8 @@
 	<groupId>com.officedubac</groupId>
 	<artifactId>o</artifactId>
 	<version>b</version>
-	<packaging>war</packaging>
+<!--	<packaging>war</packaging>-->
+	<packaging>jar</packaging>
 
 	<name>project</name>
 	<description>Projet de dématérialisation des enrôlements et gestion des stats</description>

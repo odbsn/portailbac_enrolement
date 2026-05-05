@@ -425,7 +425,14 @@ export default function EspaceCandidat() {
                         label="Type de candidat"
                         value={candidat?.typeCandidat}
                       />
-                      <InfoRow label="EPS" value={candidat?.eps} />
+                      <InfoRow 
+                        label="EPS" 
+                        value={
+                          candidat?.eps === 'A' ? 'Apte' :
+                          candidat?.eps === 'I' ? 'Inapte' :
+                          candidat?.eps || '-'
+                        } 
+                      />
                       <InfoRow
                         label="Établissement fréquenté"
                         value={candidat?.etablissementName}

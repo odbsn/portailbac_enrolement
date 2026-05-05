@@ -238,13 +238,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     private Query buildFilterQuery(
             String keyword,
             String serie,
-            String numeroDossier,
             String jury,
+            String numeroDossier,
             String typeCandidat,
             String statutResultat,
             String sexe,
-            String etablissementCode,
-            String nationalite) {
+            String nationalite,
+            String etablissementCode) {
 
         Query query = new Query();
         List<Criteria> criteriaList = new ArrayList<>();
@@ -272,7 +272,8 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             criteriaList.add(Criteria.where("jury").is(jury));
         }
 
-        if (StringUtils.hasText(jury)) {
+        // ✅ CORRIGÉ : Filtrer par numeroDossier
+        if (StringUtils.hasText(numeroDossier)) {
             criteriaList.add(Criteria.where("numeroDossier").is(numeroDossier));
         }
 
@@ -283,6 +284,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         if (StringUtils.hasText(statutResultat)) {
             criteriaList.add(Criteria.where("statutResultat").is(statutResultat));
         }
+
         if (StringUtils.hasText(etablissementCode)) {
             criteriaList.add(Criteria.where("etablissement.code").is(etablissementCode));
         }
@@ -415,19 +417,39 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String keyword,
             String serie,
             String jury,
-            String numeroDossier,
-            String typeCandidat,
-            String statutResultat,
+            String numeroDossier,      // ← 4ème
+            String typeCandidat,       // ← 5ème
+            String statutResultat,     // ← 6ème
             String sexe,
             String nationalite,
             String etablissementCode,
             Pageable pageable) {
 
-        log.info("Fetching candidats with filters and epreuves - keyword: {}, serie: {}, etablissementCode: {},jury: {}, type: {}, statut: {}, sexe: {}, nationalite: {}",
-                keyword, serie,etablissementCode, jury, typeCandidat, statutResultat, sexe, nationalite);
+        log.info("Fetching candidats with filters:");
+        log.info("  - keyword: {}", keyword);
+        log.info("  - serie: {}", serie);
+        log.info("  - jury: {}", jury);
+        log.info("  - numeroDossier: {}", numeroDossier);
+        log.info("  - typeCandidat: {}", typeCandidat);
+        log.info("  - statutResultat: {}", statutResultat);
+        log.info("  - sexe: {}", sexe);
+        log.info("  - nationalite: {}", nationalite);
+        log.info("  - etablissementCode: {}", etablissementCode);
 
-        Query query = buildFilterQuery(keyword, serie, jury, numeroDossier, typeCandidat,
-                statutResultat, sexe, nationalite, etablissementCode);
+        // ⚠️ IMPORTANT : L'ordre des paramètres DOIT correspondre exactement
+        // à la définition de buildFilterQuery
+        Query query = buildFilterQuery(
+                keyword,          // 1
+                serie,            // 2
+                jury,             // 3
+                numeroDossier,    // 4 ←
+                typeCandidat,     // 5 ←
+                statutResultat,   // 6 ←
+                sexe,             // 7
+                nationalite,      // 8
+                etablissementCode // 9
+        );
+
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
         query.with(pageable);
 

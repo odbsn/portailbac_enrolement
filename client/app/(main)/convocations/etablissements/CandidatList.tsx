@@ -537,7 +537,18 @@ export default function CandidatsTabTable({
       setIsExporting(false);
     }
   };
-
+const epsTemplate = (rowData: CandidatFinis) => {
+  if (!rowData.eps) return "-";
+  
+  switch (rowData.eps) {
+    case 'A':
+      return <span className="text-green-600 font-semibold">Apte</span>;
+    case 'I':
+      return <span className="text-red-600 font-semibold">Inapte</span>;
+    default:
+      return rowData.eps;
+  }
+};
   const handleExportPdfBySerie = async (serieCode: string) => {
     if (!serieCode) {
       toast.current?.show({
@@ -776,21 +787,6 @@ export default function CandidatsTabTable({
     // Matières facultatives simples (ef1, ef2)
     if (rowData.ef1) facultatives.push(rowData.ef1);
     if (rowData.ef2) facultatives.push(rowData.ef2);
-
-    // Matières facultatives avec détails
-    if (rowData.nbMatFacult && rowData.nbMatFacult > 0) {
-      if (rowData.centreMatFac1) {
-        facultatives.push(
-          `${rowData.libMatFac1 || "Matière 1"} (${rowData.centreMatFac1})`,
-        );
-      }
-      if (rowData.centreMatFac2) {
-        facultatives.push(
-          `${rowData.libMatFac2 || "Matière 2"} (${rowData.centreMatFac2})`,
-        );
-      }
-    }
-
     return facultatives.length === 0 ? "-" : facultatives.join(", ");
   };
 
@@ -1259,8 +1255,12 @@ export default function CandidatsTabTable({
               header="Nationalité"
               style={{ maxWidth: "6rem" }}
             />
-            <Column field="eps" header="EPS" style={{ maxWidth: "3rem" }} />
-
+            <Column 
+                field="eps" 
+                header="EPS" 
+                body={epsTemplate}  // ← Utilisez le template au lieu du field direct
+                style={{ maxWidth: "3rem" }} 
+              />
             <Column
               header="Matière fac."
               body={matiereFacultativeTemplate}

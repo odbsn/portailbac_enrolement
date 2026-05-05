@@ -71,6 +71,7 @@ export default function CandidatsTabTable({
     useState<CandidatFinis | null>(null);
   const [selectedSerieCode, setSelectedSerieCode] = useState<string>("");
   const [etablissementCodeFilter, setEtablissementCodeFilter] = useState<string>("");
+  const [numeroDossierFilter, setNumeroDossierFilter] = useState<string>("");
   const [rows, setRows] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
   const [convocationSerie, setConvocationSerie] = useState<string>("");
@@ -131,6 +132,17 @@ export default function CandidatsTabTable({
   }, 500),
   [setFilters],
 );
+const debouncedSetNumeroDossier = useCallback(
+  debounce((value: string) => {
+    setFilters({ numeroDossier: value, page: 0 });
+  }, 500),
+  [setFilters],
+);
+
+useEffect(() => {
+  debouncedSetNumeroDossier(numeroDossierFilter);
+  return () => debouncedSetNumeroDossier.cancel();
+}, [numeroDossierFilter, debouncedSetNumeroDossier]);
 
 useEffect(() => {
   debouncedSetEtablissementCode(etablissementCodeFilter);
@@ -510,6 +522,18 @@ useEffect(() => {
     /> */}
     </div>
   );
+  const epsTemplate = (rowData: CandidatFinis) => {
+    if (!rowData.eps) return "-";
+    
+    switch (rowData.eps) {
+      case 'A':
+        return <span className="text-green-600 font-semibold">Apte</span>;
+      case 'I':
+        return <span className="text-red-600 font-semibold">Inapte</span>;
+      default:
+        return rowData.eps;
+    }
+  };
 
   const onPageChange = (event: DataTableStateEvent) => {
     const newPage = event.page ?? 0;
@@ -650,7 +674,45 @@ useEffect(() => {
                     />
                   )}
                 </div>
-
+                    {/* Champ filtre numéro dossier */}
+                    <div
+                      style={{
+                        width: "220px",
+                        height: "35px",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 10px",
+                        gap: "4px",
+                        border: "1px solid #3b82f6",
+                        borderRadius: "999px",
+                        background: "#fff",
+                      }}
+                    >
+                      <i
+                        className="pi pi-folder-open"
+                        style={{ fontSize: "14px", color: "#6b7280" }}
+                      />
+                      <input
+                        type="text"
+                        value={numeroDossierFilter}
+                        onChange={(e) => setNumeroDossierFilter(e.target.value)}
+                        placeholder="N° Dossier..."
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          outline: "none",
+                          fontSize: "14px",
+                          background: "transparent",
+                        }}
+                      />
+                      {numeroDossierFilter && (
+                        <i
+                          className="pi pi-times"
+                          style={{ fontSize: "12px", color: "#6b7280", cursor: "pointer" }}
+                          onClick={() => setNumeroDossierFilter("")}
+                        />
+                      )}
+                    </div>
                 <Button
                   onClick={async () => {
                     const blob = await exportPdf();
@@ -1000,11 +1062,12 @@ useEffect(() => {
               header="Nationalité"
               style={{ maxWidth: "6rem", minWidth: "5rem" }}
             />
-            <Column
-              field="eps"
-              header="EPS"
-              style={{ maxWidth: "3rem", minWidth: "2.5rem" }}
-            />
+           <Column 
+                           field="eps" 
+                           header="EPS" 
+                           body={epsTemplate}  // ← Utilisez le template au lieu du field direct
+                           style={{ maxWidth: "3rem" }} 
+                         />
             {/* <Column
               header="Matière fac."
               body={matiereFacultativeTemplate}

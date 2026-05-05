@@ -157,12 +157,12 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String statutResultat,
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
-            @RequestParam(required = false) String etablissementCode,  // ← AJOUT
+            @RequestParam(required = false) String etablissementCode,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
-                keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);  // ← AJOUT
+                keyword, serie, jury, numeroDossier, typeCandidat,
+                statutResultat, sexe, nationalite, etablissementCode, pageable);
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/search")
