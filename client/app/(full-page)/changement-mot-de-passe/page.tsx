@@ -89,7 +89,8 @@ const ChangedPassword = () => {
         new_password: values.new_password,
       };
 
-      try {
+      try 
+      {
         // Remplace cette partie avec ta logique API
         console.log("Mot de passe changé :", changedPasswordDTO);
         console.log("User :", user?.id);
