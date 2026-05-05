@@ -172,7 +172,7 @@ export interface FilterParams {
   sexe?: string;
   nationalite?: string;
   numeroDossier?: string;
-  codeEtablissement?: string;
+  etablissementCode?: string;
   page?: number;
   size?: number;
   sort?: string;
@@ -263,7 +263,7 @@ const initialState = {
     sexe: "",
     nationalite: "",
     numeroDossier: "",
-    codeEtablissement: "",
+    etablissementCode: "",
     page: 0,
     size: 20,
     sort: "nom,asc",

@@ -148,28 +148,23 @@ public class CandidatFinisResource {
 
     // ✅ CORRECTION ICI - Ajouter les paramètres de filtre
     @GetMapping("/all")
-    @Operation(summary = "Lister tous les candidats", description = "Récupère la liste paginée de tous les candidats avec leurs épreuves")
     public ResponseEntity<PageResponse<CandidatFinisResponse>> getAll(
-            @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
-            @Parameter(description = "Série") @RequestParam(required = false) String serie,
-            @Parameter(description = "Jury") @RequestParam(required = false) String jury,
-            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
-            @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
-            @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
-            @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
-            @Parameter(description = "Nationalité") @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String numeroDossier,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,  // ← AJOUT
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        log.info("GET /api/v1/candidats/all - Get all candidats with pagination and epreuves");
-        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, numeroDossier: {},typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
-                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
-
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
-                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
-
+                keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
-
     @GetMapping("/search")
     @Operation(summary = "Rechercher des candidats", description = "Recherche des candidats par mot-clé avec leurs épreuves")
     public ResponseEntity<PageResponse<CandidatFinisResponse>> search(
@@ -181,21 +176,21 @@ public class CandidatFinisResource {
     }
 
     @GetMapping("/filters")
-    @Operation(summary = "Rechercher des candidats avec filtres", description = "Recherche des candidats avec plusieurs filtres et leurs épreuves")
     public ResponseEntity<PageResponse<CandidatFinisResponse>> getWithFilters(
-            @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
-            @Parameter(description = "Série") @RequestParam(required = false) String serie,
-            @Parameter(description = "Jury") @RequestParam(required = false) String jury,
-            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
-            @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
-            @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
-            @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
-            @Parameter(description = "Nationalité") @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String numeroDossier,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,  // ← AJOUT
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        log.info("GET /api/v1/candidats/filters - Get candidats with filters");
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
-                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
 
@@ -222,27 +217,22 @@ public class CandidatFinisResource {
     // ==================== MÉTHODES POUR UTILISATEUR CONNECTÉ ====================
 
     // CandidatFinisResource.java
-
     @GetMapping("/me")
-    @Operation(summary = "Lister mes candidats", description = "Récupère la liste paginée des candidats de mon établissement avec leurs épreuves")
     public ResponseEntity<PageResponse<CandidatFinisResponse>> getAllByUtilisateurConnecte(
-            @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
-            @Parameter(description = "Série") @RequestParam(required = false) String serie,
-            @Parameter(description = "Jury") @RequestParam(required = false) String jury,
-            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
-            @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
-            @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
-            @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
-            @Parameter(description = "Nationalité") @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String numeroDossier,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,  // ← AJOUT
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        log.info("GET /api/v1/candidats/me - Get candidats of connected user with epreuves");
-        log.info("📝 Filtres reçus - keyword: {}, serie: {}, jury: {}, numeroDossier: {},typeCandidat: {}, statutResultat: {}, sexe: {}, nationalite: {}",
-                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
-
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
-                keyword, serie, jury,numeroDossier, typeCandidat, statutResultat, sexe, nationalite, pageable);
-
+                keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/all")
@@ -258,27 +248,26 @@ public class CandidatFinisResource {
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/filters")
-    @Operation(summary = "Rechercher mes candidats", description = "Recherche des candidats de mon établissement avec filtres et leurs épreuves")
     public ResponseEntity<PageResponse<CandidatFinisResponse>> getWithFiltersByUtilisateurConnecte(
-            @Parameter(description = "Mot-clé de recherche") @RequestParam(required = false) String keyword,
-            @Parameter(description = "Série") @RequestParam(required = false) String serie,
-            @Parameter(description = "Jury") @RequestParam(required = false) String jury,
-            @Parameter(description = "NumeroDossier") @RequestParam(required = false) String numeroDossier,
-            @Parameter(description = "Type de candidat") @RequestParam(required = false) String typeCandidat,
-            @Parameter(description = "Statut résultat") @RequestParam(required = false) String statutResultat,
-            @Parameter(description = "Sexe") @RequestParam(required = false) String sexe,
-            @Parameter(description = "Nationalité") @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String numeroDossier,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,  // ← AJOUT
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        log.info("GET /api/v1/candidats/me/filters - Get candidats of connected user with filters");
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
-                keyword, serie, jury, numeroDossier,typeCandidat, statutResultat, sexe, nationalite, pageable);
+                keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/export")
     @Operation(summary = "Exporter mes candidats", description = "Exporte la liste des candidats de mon établissement au format Excel")
     public ResponseEntity<byte[]> exportMyCandidats() {
-
         log.info("GET /api/v1/candidats/me/export - Export tous les candidats de mon établissement");
 
         ByteArrayInputStream excelFile = candidatFinisService.exportAllCandidatsToExcel();

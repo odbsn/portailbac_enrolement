@@ -243,6 +243,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String typeCandidat,
             String statutResultat,
             String sexe,
+            String etablissementCode,
             String nationalite) {
 
         Query query = new Query();
@@ -281,6 +282,9 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         if (StringUtils.hasText(statutResultat)) {
             criteriaList.add(Criteria.where("statutResultat").is(statutResultat));
+        }
+        if (StringUtils.hasText(etablissementCode)) {
+            criteriaList.add(Criteria.where("etablissement.code").is(etablissementCode));
         }
 
         if (StringUtils.hasText(sexe)) {
@@ -403,7 +407,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAll(Pageable pageable) {
         log.info("Fetching all candidats with epreuves, pagination: {}", pageable);
-        return getWithFilters(null, null, null, null, null, null, null,null, pageable);
+        return getWithFilters(null, null, null, null, null, null, null,null, null,pageable);
     }
 
     @Override
@@ -416,12 +420,14 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String statutResultat,
             String sexe,
             String nationalite,
+            String etablissementCode,
             Pageable pageable) {
 
-        log.info("Fetching candidats with filters and epreuves - keyword: {}, serie: {}, jury: {}, type: {}, statut: {}, sexe: {}, nationalite: {}",
-                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
+        log.info("Fetching candidats with filters and epreuves - keyword: {}, serie: {}, etablissementCode: {},jury: {}, type: {}, statut: {}, sexe: {}, nationalite: {}",
+                keyword, serie,etablissementCode, jury, typeCandidat, statutResultat, sexe, nationalite);
 
-        Query query = buildFilterQuery(keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
+        Query query = buildFilterQuery(keyword, serie, jury, numeroDossier, typeCandidat,
+                statutResultat, sexe, nationalite, etablissementCode);
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
         query.with(pageable);
 
@@ -440,13 +446,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             return getAll(pageable);
         }
 
-        return getWithFilters(keyword.trim(), null, null, null, null, null, null,null, pageable);
+        return getWithFilters(keyword.trim(), null, null, null, null, null, null,null,null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getBySerie(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie with epreuves: {}", serieCode);
-        return getWithFilters(null, serieCode, null, null, null, null, null,null, pageable);
+        return getWithFilters(null, serieCode, null, null, null, null, null,null,null, pageable);
     }
 
     @Override
@@ -499,7 +505,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getByJury(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury with epreuves: {}", jury);
-        return getWithFilters(null, null, jury, null, null, null, null,null, pageable);
+        return getWithFilters(null, null, jury, null, null, null, null,null, null,pageable);
     }
 
     // ==================== MÉTHODES AVEC FILTRE ÉTABLISSEMENT ====================
@@ -507,7 +513,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAllByUtilisateurConnecte(Pageable pageable) {
         log.info("Fetching all candidats of connected user establishment with epreuves");
-        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null,null,null, pageable);
     }
 
     @Override
@@ -520,13 +526,15 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String numeroDossier,
             String sexe,
             String nationalite,
+            String etablissementCode,
             Pageable pageable) {
 
         log.info("Fetching candidats of connected user establishment with filters and epreuves");
 
         Etablissement etablissement = getEtablissementUtilisateurConnecte();
 
-        Query query = buildFilterQuery(keyword, serie, jury, typeCandidat,numeroDossier, statutResultat, sexe, nationalite);
+        Query query =  buildFilterQuery(keyword, serie, jury, typeCandidat, numeroDossier,
+                statutResultat, sexe, nationalite, etablissementCode);
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
@@ -542,13 +550,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getBySerieByUtilisateurConnecte(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie of connected user establishment with epreuves: {}", serieCode);
-        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null,null,null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getByJuryByUtilisateurConnecte(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury of connected user establishment with epreuves: {}", jury);
-        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null,null,null, pageable);
     }
 
     @Override
