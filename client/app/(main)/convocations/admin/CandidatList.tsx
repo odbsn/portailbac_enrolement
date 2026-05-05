@@ -23,6 +23,7 @@ import ConvocationMassivePrint, {
 import { useSerieStore } from "../etablissements/serieStore";
 import RegenerateConvocationButton from "./RegenerateConvocationButton";
 import ConvocationButton from "./ConvocationButtonAdmin";
+import { Divide } from "lucide-react";
 
 interface CandidatsTabTableProps {
   onViewCandidat?: (candidat: CandidatFinis) => void;
@@ -70,7 +71,8 @@ export default function CandidatsTabTable({
   const [selectedCandidat, setSelectedCandidat] =
     useState<CandidatFinis | null>(null);
   const [selectedSerieCode, setSelectedSerieCode] = useState<string>("");
-  const [etablissementCodeFilter, setEtablissementCodeFilter] = useState<string>("");
+  const [etablissementCodeFilter, setEtablissementCodeFilter] =
+    useState<string>("");
   const [numeroDossierFilter, setNumeroDossierFilter] = useState<string>("");
   const [rows, setRows] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
@@ -125,29 +127,28 @@ export default function CandidatsTabTable({
     return () => debouncedSetKeyword.cancel();
   }, [globalFilter, debouncedSetKeyword]);
 
-
   const debouncedSetEtablissementCode = useCallback(
-  debounce((value: string) => {
-    setFilters({ etablissementCode: value, page: 0 });
-  }, 500),
-  [setFilters],
-);
-const debouncedSetNumeroDossier = useCallback(
-  debounce((value: string) => {
-    setFilters({ numeroDossier: value, page: 0 });
-  }, 500),
-  [setFilters],
-);
+    debounce((value: string) => {
+      setFilters({ etablissementCode: value, page: 0 });
+    }, 500),
+    [setFilters],
+  );
+  const debouncedSetNumeroDossier = useCallback(
+    debounce((value: string) => {
+      setFilters({ numeroDossier: value, page: 0 });
+    }, 500),
+    [setFilters],
+  );
 
-useEffect(() => {
-  debouncedSetNumeroDossier(numeroDossierFilter);
-  return () => debouncedSetNumeroDossier.cancel();
-}, [numeroDossierFilter, debouncedSetNumeroDossier]);
+  useEffect(() => {
+    debouncedSetNumeroDossier(numeroDossierFilter);
+    return () => debouncedSetNumeroDossier.cancel();
+  }, [numeroDossierFilter, debouncedSetNumeroDossier]);
 
-useEffect(() => {
-  debouncedSetEtablissementCode(etablissementCodeFilter);
-  return () => debouncedSetEtablissementCode.cancel();
-}, [etablissementCodeFilter, debouncedSetEtablissementCode]);
+  useEffect(() => {
+    debouncedSetEtablissementCode(etablissementCodeFilter);
+    return () => debouncedSetEtablissementCode.cancel();
+  }, [etablissementCodeFilter, debouncedSetEtablissementCode]);
 
   // Filtre par série
   const handleSerieClick = (serieCode: string) => {
@@ -524,11 +525,11 @@ useEffect(() => {
   );
   const epsTemplate = (rowData: CandidatFinis) => {
     if (!rowData.eps) return "-";
-    
+
     switch (rowData.eps) {
-      case 'A':
+      case "A":
         return <span className="text-green-600 font-semibold">Apte</span>;
-      case 'I':
+      case "I":
         return <span className="text-red-600 font-semibold">Inapte</span>;
       default:
         return rowData.eps;
@@ -600,42 +601,7 @@ useEffect(() => {
                     {totalElements.toLocaleString()} candidats
                   </span>
                 </div>
-                <div
-                  style={{
-                    width: "300px",
-                    height: "35px",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 10px",
-                    gap: "4px",
-                    border: "1px solid #3b82f6",
-                    borderRadius: "999px",
-                    background: "#fff",
-                  }}
-                >
-                  <i
-                    className="pi pi-search"
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                    }}
-                  />
 
-                  <input
-                    type="text"
-                    value={globalFilter}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    placeholder="Rechercher..."
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      outline: "none",
-                      fontSize: "14px",
-                      background: "transparent",
-                    }}
-                  />
-                </div>
-                {/* Champ filtre établissement */}
                 <div
                   style={{
                     width: "220px",
@@ -669,92 +635,99 @@ useEffect(() => {
                   {etablissementCodeFilter && (
                     <i
                       className="pi pi-times"
-                      style={{ fontSize: "12px", color: "#6b7280", cursor: "pointer" }}
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        cursor: "pointer",
+                      }}
                       onClick={() => setEtablissementCodeFilter("")}
                     />
                   )}
                 </div>
-                    {/* Champ filtre numéro dossier */}
-                    <div
-                      style={{
-                        width: "220px",
-                        height: "35px",
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "0 10px",
-                        gap: "4px",
-                        border: "1px solid #3b82f6",
-                        borderRadius: "999px",
-                        background: "#fff",
-                      }}
-                    >
-                      <i
-                        className="pi pi-folder-open"
-                        style={{ fontSize: "14px", color: "#6b7280" }}
-                      />
-                      <input
-                        type="text"
-                        value={numeroDossierFilter}
-                        onChange={(e) => setNumeroDossierFilter(e.target.value)}
-                        placeholder="N° Dossier..."
-                        style={{
-                          flex: 1,
-                          border: "none",
-                          outline: "none",
-                          fontSize: "14px",
-                          background: "transparent",
-                        }}
-                      />
-                      {numeroDossierFilter && (
-                        <i
-                          className="pi pi-times"
-                          style={{ fontSize: "12px", color: "#6b7280", cursor: "pointer" }}
-                          onClick={() => setNumeroDossierFilter("")}
-                        />
-                      )}
-                    </div>
-                <Button
-                  onClick={async () => {
-                    const blob = await exportPdf();
 
-                    if (!blob) return;
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = "liste_candidats.pdf";
-                    link.click();
-                    window.URL.revokeObjectURL(url);
+                <div
+                  style={{
+                    width: "220px",
+                    height: "35px",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 10px",
+                    gap: "4px",
+                    border: "1px solid #3b82f6",
+                    borderRadius: "999px",
+                    background: "#fff",
                   }}
-                  disabled={isExportingPdf}
                 >
-                  {isExportingPdf
-                    ? "Génération PDF..."
-                    : "Exporter toute la liste en PDF"}
-                </Button>
-                <Button
-                  onClick={handleExportZip}
-                  disabled={isExportingZip}
-                  className="btn btn-secondary"
-                >
-                  {isExportingZip
-                    ? "Génération ZIP..."
-                    : "Exporter la liste par série"}
-                </Button>
+                  <i
+                    className="pi pi-folder-open"
+                    style={{ fontSize: "14px", color: "#6b7280" }}
+                  />
+                  <input
+                    type="text"
+                    value={numeroDossierFilter}
+                    onChange={(e) => setNumeroDossierFilter(e.target.value)}
+                    placeholder="N° Dossier..."
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "14px",
+                      background: "transparent",
+                    }}
+                  />
+                  {numeroDossierFilter && (
+                    <i
+                      className="pi pi-times"
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setNumeroDossierFilter("")}
+                    />
+                  )}
+                </div>
 
-                {/* <Button
-                  label="Convocation"
-                  icon="pi pi-print"
-                  severity="info"
-                  onClick={handleGenerateConvocations}
-                /> */}
-                <Button
-                  label="Nouveau candidat"
-                  icon="pi pi-plus"
-                  severity="success"
-                  onClick={handleAddCandidat}
-                />
+                <div
+                  style={{
+                    width: "300px",
+                    height: "35px",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 10px",
+                    gap: "4px",
+                    border: "1px solid #3b82f6",
+                    borderRadius: "999px",
+                    background: "#fff",
+                  }}
+                >
+                  <i
+                    className="pi pi-search"
+                    style={{ fontSize: "14px", color: "#6b7280" }}
+                  />
+                  <input
+                    type="text"
+                    value={globalFilter}
+                    onChange={(e) => setGlobalFilter(e.target.value)}
+                    placeholder="Rechercher..."
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "14px",
+                      background: "transparent",
+                    }}
+                  />
+                </div>
               </div>
+            }
+            right={
+              <Button
+                label="Nouveau candidat"
+                icon="pi pi-plus"
+                severity="success"
+                onClick={handleAddCandidat}
+              />
             }
             className="border-none bg-transparent p-0"
           />
@@ -1002,6 +975,11 @@ useEffect(() => {
               style={{ maxWidth: "4rem", minWidth: "3.5rem" }}
             />
             <Column
+              field="numeroDossier"
+              header="N° dossier"
+              style={{ maxWidth: "4rem", minWidth: "3.5rem" }}
+            />
+            <Column
               field="numeroTable"
               header="N° Table"
               style={{ maxWidth: "5rem", minWidth: "4rem" }}
@@ -1058,16 +1036,16 @@ useEffect(() => {
               }}
             />
             <Column
-              field="nationalite"
-              header="Nationalité"
+              field="etablissement.code"
+              header="Etablissement"
               style={{ maxWidth: "6rem", minWidth: "5rem" }}
             />
-           <Column 
-                           field="eps" 
-                           header="EPS" 
-                           body={epsTemplate}  // ← Utilisez le template au lieu du field direct
-                           style={{ maxWidth: "3rem" }} 
-                         />
+            <Column
+              field="eps"
+              header="EPS"
+              body={epsTemplate} // ← Utilisez le template au lieu du field direct
+              style={{ maxWidth: "3rem" }}
+            />
             {/* <Column
               header="Matière fac."
               body={matiereFacultativeTemplate}
