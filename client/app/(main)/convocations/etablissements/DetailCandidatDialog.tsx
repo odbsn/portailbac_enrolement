@@ -82,6 +82,13 @@ export default function DetailCandidatDialog({
         text
         className="p-button-text"
       />
+      <ConvocationButton 
+    numeroTable={candidat.numeroTable}
+    label="Télécharger la convocation"
+    icon="pi pi-file-pdf"
+    className="p-button-text"
+    circular={false}
+/>
     </div>
   );
 

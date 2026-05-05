@@ -48,5 +48,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
 
   return <>{children}</>;  // Afficher les enfants si l'utilisateur est autorisé
 };
-
 export default ProtectedRoute;
