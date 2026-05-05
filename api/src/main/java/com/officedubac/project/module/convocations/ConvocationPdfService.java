@@ -1,6 +1,7 @@
 package com.officedubac.project.module.convocations;
 
 import com.itextpdf.barcodes.BarcodeQRCode;
+import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.font.PdfFont;
@@ -29,6 +30,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -78,20 +80,7 @@ public class ConvocationPdfService {
 
         PdfFont normalFont = PdfFontFactory.createFont("Helvetica");
         PdfFont boldFont = PdfFontFactory.createFont("Helvetica-Bold");
-        PdfFont lucidaFont = null;
-        try {
-            java.io.File fontFile = new java.io.File("src/main/resources/fonts/LucidaUnicodeCalligraphy.ttf");
-            if (fontFile.exists()) {
-                lucidaFont = PdfFontFactory.createFont(fontFile.getAbsolutePath());
-                System.out.println("✅ Police chargée depuis: " + fontFile.getAbsolutePath());
-            } else {
-                System.err.println("Fichier non trouvé: " + fontFile.getAbsolutePath());
-                throw new IOException("Fichier non trouvé");
-            }
-        } catch (Exception e) {
-            System.err.println("Police non trouvée, utilisation de l'italique");
-            lucidaFont = normalFont;
-        }
+        PdfFont lucidaFont = loadLucidaFont(normalFont);
         document.setFont(normalFont);
 
         // ================= HEADER =================
@@ -1256,12 +1245,13 @@ public class ConvocationPdfService {
 
     private PdfFont loadLucidaFont(PdfFont fallbackFont) {
         try {
-            java.io.File fontFile = new java.io.File("src/main/resources/fonts/LucidaUnicodeCalligraphy.ttf");
-            if (fontFile.exists()) {
-                return PdfFontFactory.createFont(fontFile.getAbsolutePath());
+            InputStream fontStream = getClass().getResourceAsStream("/fonts/LucidaUnicodeCalligraphy.ttf");
+            if (fontStream != null) {
+                byte[] fontBytes = fontStream.readAllBytes();
+                return PdfFontFactory.createFont(fontBytes, PdfEncodings.IDENTITY_H);
             }
         } catch (Exception e) {
-            log.warn("Police Lucida non trouvée");
+            log.warn("Police Lucida non trouvée, utilisation police par défaut");
         }
         return fallbackFont;
     }

@@ -981,7 +981,7 @@ const epsTemplate = (rowData: CandidatFinis) => {
               icon="pi pi-file-pdf"
               label="Exporter toutes les convocations"
               className="p-button-info"
-              // disabled={true}
+              disabled={true}
             />
           </div>
         </div>
