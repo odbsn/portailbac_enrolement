@@ -5,7 +5,7 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copier le fichier JAR généré dans le conteneur
-COPY target/acteurs-bac.jar /app/app.jar
+COPY target/o-b.jar /app/app.jar
 
 # Exposer le port sur lequel l'application va tourner (ex: 8080)
 EXPOSE 8080
