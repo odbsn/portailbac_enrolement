@@ -131,151 +131,169 @@ const ChangedPassword = () => {
   });
 
   return (
-    <form onSubmit={formik.handleSubmit} className="p-4">
-      <Toast ref={toast} />
-      <div className="flex h-screen bg-white">
-        <div className="w-8 hidden lg:flex flex-column justify-content-between align-items-center px-6"></div>
+    <ProtectedRoute
+      allowedRoles={[
+        "ADMIN",
+        "SCOLARITE",
+        "AGENT_DE_SAISIE",
+        "RECEPTIONNISTE",
+        "CHEF_ETABLISSEMENT",
+        "VIGNETTES_COUPONS",
+        "AUTORISATION_RECEPTION",
+        "INSPECTEUR_ACADEMIE",
+        "FINANCE_COMPTA",
+        "DEMSG",
+      ]}
+    >
+      <form onSubmit={formik.handleSubmit} className="p-4">
+        <Toast ref={toast} />
+        <div className="flex h-screen bg-white">
+          <div className="w-8 hidden lg:flex flex-column justify-content-between align-items-center px-6"></div>
 
-        <div className="w-8 h-full text-center py-3 flex flex-column">
-          <img
-            src={`/layout/images/logo-UCAD.png`}
-            style={{
-              width: "125px",
-              maxWidth: "100%",
-              height: "auto",
-              backgroundColor: "white",
-              padding: "1px",
-              borderRadius: "50%",
-              display: "block",
-              margin: "0 auto",
-              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
-            }}
-            alt="ucad"
-          />
+          <div className="w-8 h-full text-center py-3 flex flex-column">
+            <img
+              src={`/layout/images/logo-UCAD.png`}
+              style={{
+                width: "125px",
+                maxWidth: "100%",
+                height: "auto",
+                backgroundColor: "white",
+                padding: "1px",
+                borderRadius: "50%",
+                display: "block",
+                margin: "0 auto",
+                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
+              }}
+              alt="ucad"
+            />
 
-          <div className="flex flex-column align-items-center gap-4">
-            <div className="mt-3">
-              <h3>Changement de mot de passe</h3>
-              {/* <p>Veuillez changer obligatoirement l&apos;ancien mot de passe</p> */}
-            </div>
+            <div className="flex flex-column align-items-center gap-4">
+              <div className="mt-3">
+                <h3>Changement de mot de passe</h3>
+                {/* <p>Veuillez changer obligatoirement l&apos;ancien mot de passe</p> */}
+              </div>
 
-            <div className="flex flex-column gap-2">
-              <span className="p-input-icon-right w-full relative">
-                {/* Icône cadenas à gauche */}
-                <i
-                  className="pi pi-lock"
-                  style={{
-                    position: "absolute",
-                    left: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                />
+              <div className="flex flex-column gap-2">
+                <span className="p-input-icon-right w-full relative">
+                  {/* Icône cadenas à gauche */}
+                  <i
+                    className="pi pi-lock"
+                    style={{
+                      position: "absolute",
+                      left: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                  />
 
-                {/* Icône œil à droite */}
-                <i
-                  className={classNames("pi cursor-pointer", {
-                    "pi-eye": !showPassword,
-                    "pi-eye-slash": showPassword,
-                  })}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                  onClick={() => setShowPassword(!showPassword)}
-                />
+                  {/* Icône œil à droite */}
+                  <i
+                    className={classNames("pi cursor-pointer", {
+                      "pi-eye": !showPassword,
+                      "pi-eye-slash": showPassword,
+                    })}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                    onClick={() => setShowPassword(!showPassword)}
+                  />
 
-                {/* Champ de saisie */}
-                <InputText
-                  id="usr_password"
-                  autoComplete="off"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Saisir le mot de passe reçu"
-                  value={formik.values.usr_password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  style={{
-                    width: "100%",
-                    paddingLeft: "2.5rem",
-                    paddingRight: "2.5rem",
-                  }}
-                  className={`p-inputtext-sm w-full ${
-                    formik.touched.usr_password && formik.errors.usr_password
-                      ? "p-invalid"
-                      : ""
-                  }`}
-                />
-              </span>
+                  {/* Champ de saisie */}
+                  <InputText
+                    id="usr_password"
+                    autoComplete="off"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Saisir le mot de passe reçu"
+                    value={formik.values.usr_password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    style={{
+                      width: "100%",
+                      paddingLeft: "2.5rem",
+                      paddingRight: "2.5rem",
+                    }}
+                    className={`p-inputtext-sm w-full ${
+                      formik.touched.usr_password && formik.errors.usr_password
+                        ? "p-invalid"
+                        : ""
+                    }`}
+                  />
+                </span>
 
-              {/* Message d’erreur */}
-              {formik.touched.usr_password && formik.errors.usr_password && (
-                <small className="p-error">{formik.errors.usr_password}</small>
-              )}
+                {/* Message d’erreur */}
+                {formik.touched.usr_password && formik.errors.usr_password && (
+                  <small className="p-error">
+                    {formik.errors.usr_password}
+                  </small>
+                )}
 
-              <span className="p-input-icon-right w-full relative">
-                {/* Icône cadenas à gauche */}
-                <i
-                  className="pi pi-lock"
-                  style={{
-                    position: "absolute",
-                    left: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                />
+                <span className="p-input-icon-right w-full relative">
+                  {/* Icône cadenas à gauche */}
+                  <i
+                    className="pi pi-lock"
+                    style={{
+                      position: "absolute",
+                      left: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                  />
 
-                {/* Icône œil à droite */}
-                <i
-                  className={classNames("pi cursor-pointer", {
-                    "pi-eye": !showPassword2,
-                    "pi-eye-slash": showPassword2,
-                  })}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                  onClick={() => setShowPassword2(!showPassword2)}
-                />
+                  {/* Icône œil à droite */}
+                  <i
+                    className={classNames("pi cursor-pointer", {
+                      "pi-eye": !showPassword2,
+                      "pi-eye-slash": showPassword2,
+                    })}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                    onClick={() => setShowPassword2(!showPassword2)}
+                  />
 
-                {/* Champ de saisie */}
-                <InputText
-                  id="new_password"
-                  autoComplete="off"
-                  type={showPassword2 ? "text" : "password"}
-                  placeholder="Fournir un nouveau mot de passe"
-                  value={formik.values.new_password}
-                  onChange={handlePasswordChange2}
-                  onBlur={formik.handleBlur}
-                  style={{
-                    width: "100%",
-                    paddingLeft: "2.5rem",
-                    paddingRight: "2.5rem",
-                  }}
-                  className={`p-inputtext-sm w-full ${
-                    formik.touched.new_password && formik.errors.new_password
-                      ? "p-invalid"
-                      : ""
-                  }`}
-                />
-              </span>
+                  {/* Champ de saisie */}
+                  <InputText
+                    id="new_password"
+                    autoComplete="off"
+                    type={showPassword2 ? "text" : "password"}
+                    placeholder="Fournir un nouveau mot de passe"
+                    value={formik.values.new_password}
+                    onChange={handlePasswordChange2}
+                    onBlur={formik.handleBlur}
+                    style={{
+                      width: "100%",
+                      paddingLeft: "2.5rem",
+                      paddingRight: "2.5rem",
+                    }}
+                    className={`p-inputtext-sm w-full ${
+                      formik.touched.new_password && formik.errors.new_password
+                        ? "p-invalid"
+                        : ""
+                    }`}
+                  />
+                </span>
 
-              {/* Message d’erreur */}
-              {formik.touched.new_password && formik.errors.new_password && (
-                <small className="p-error">{formik.errors.new_password}</small>
-              )}
+                {/* Message d’erreur */}
+                {formik.touched.new_password && formik.errors.new_password && (
+                  <small className="p-error">
+                    {formik.errors.new_password}
+                  </small>
+                )}
 
-              {/* Indicateur de force du mot de passe */}
-              {formik.values.new_password && !formik.errors.new_password && (
-                <small
-                  className={`block mt-2 px-3 py-1 rounded-md text-sm font-semibold shadow-sm text-center
+                {/* Indicateur de force du mot de passe */}
+                {formik.values.new_password && !formik.errors.new_password && (
+                  <small
+                    className={`block mt-2 px-3 py-1 rounded-md text-sm font-semibold shadow-sm text-center
                                             ${
                                               passwordStrength === "fort"
                                                 ? "bg-green-600 text-white"
@@ -283,93 +301,95 @@ const ChangedPassword = () => {
                                                 ? "bg-yellow-500 text-black"
                                                 : "bg-red-500 text-white"
                                             }`}
-                >
-                  Niveau du mot de passe : <b>{passwordStrength}</b>
-                </small>
-              )}
+                  >
+                    Niveau du mot de passe : <b>{passwordStrength}</b>
+                  </small>
+                )}
 
-              <span className="p-input-icon-left w-full relative">
-                {/* Icône cadenas à gauche */}
-                <i
-                  className="pi pi-lock"
-                  style={{
-                    position: "absolute",
-                    left: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                />
+                <span className="p-input-icon-left w-full relative">
+                  {/* Icône cadenas à gauche */}
+                  <i
+                    className="pi pi-lock"
+                    style={{
+                      position: "absolute",
+                      left: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                  />
 
-                {/* Icône œil à droite */}
-                <i
-                  className={classNames("pi cursor-pointer", {
-                    "pi-eye": !showPassword3,
-                    "pi-eye-slash": showPassword3,
-                  })}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "20px",
-                    transform: "translateY(-50%)",
-                    color: "black",
-                  }}
-                  onClick={() => setShowPassword3(!showPassword3)}
-                />
-                <InputText
-                  id="conf_password"
-                  type={showPassword3 ? "text" : "password"}
-                  placeholder="Confirmer le nouveau mot de passe"
-                  value={formik.values.conf_password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  style={{
-                    width: "100%",
-                    paddingLeft: "2.5rem",
-                    paddingRight: "2.5rem",
-                  }}
-                  className={`p-inputtext-sm w-full ${
-                    formik.touched.conf_password && formik.errors.conf_password
-                      ? "p-invalid"
-                      : ""
-                  }`}
-                />
-                {formik.touched.conf_password &&
-                  formik.errors.conf_password && (
-                    <small className="p-error">
-                      {formik.errors.conf_password}
-                    </small>
-                  )}
-              </span>
-
-              {/* Affichage du message de confirmation */}
-              {!isPasswordMatch && (
-                <span className="text-red-500 text-sm mt-1">
-                  Les mots de passe ne correspondent pas
+                  {/* Icône œil à droite */}
+                  <i
+                    className={classNames("pi cursor-pointer", {
+                      "pi-eye": !showPassword3,
+                      "pi-eye-slash": showPassword3,
+                    })}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "20px",
+                      transform: "translateY(-50%)",
+                      color: "black",
+                    }}
+                    onClick={() => setShowPassword3(!showPassword3)}
+                  />
+                  <InputText
+                    id="conf_password"
+                    type={showPassword3 ? "text" : "password"}
+                    placeholder="Confirmer le nouveau mot de passe"
+                    value={formik.values.conf_password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    style={{
+                      width: "100%",
+                      paddingLeft: "2.5rem",
+                      paddingRight: "2.5rem",
+                    }}
+                    className={`p-inputtext-sm w-full ${
+                      formik.touched.conf_password &&
+                      formik.errors.conf_password
+                        ? "p-invalid"
+                        : ""
+                    }`}
+                  />
+                  {formik.touched.conf_password &&
+                    formik.errors.conf_password && (
+                      <small className="p-error">
+                        {formik.errors.conf_password}
+                      </small>
+                    )}
                 </span>
-              )}
-              <br />
 
-              <div className="flex flex-wrap gap-2 justify-content-between">
-                <Button
-                  label="Enregistrer le nouveau mot de passe"
-                  className="flex-auto justify-content-center"
-                  type="submit"
-                />
+                {/* Affichage du message de confirmation */}
+                {!isPasswordMatch && (
+                  <span className="text-red-500 text-sm mt-1">
+                    Les mots de passe ne correspondent pas
+                  </span>
+                )}
+                <br />
+
+                <div className="flex flex-wrap gap-2 justify-content-between">
+                  <Button
+                    label="Enregistrer le nouveau mot de passe"
+                    className="flex-auto justify-content-center"
+                    type="submit"
+                  />
+                </div>
+                <br />
+                <p className="font-bold text-black">
+                  <span className="footer-copyright">
+                    &#169; Office du Baccalauréat. Tous droits réservés
+                  </span>
+                </p>
               </div>
-              <br />
-              <p className="font-bold text-black">
-                <span className="footer-copyright">
-                  &#169; Office du Baccalauréat. Tous droits réservés
-                </span>
-              </p>
             </div>
           </div>
-        </div>
 
-        <div className="w-8 hidden lg:flex flex-column justify-content-between align-items-center px-6 py-6"></div>
-      </div>
-    </form>
+          <div className="w-8 hidden lg:flex flex-column justify-content-between align-items-center px-6 py-6"></div>
+        </div>
+      </form>
+    </ProtectedRoute>
   );
 };
 
