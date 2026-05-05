@@ -171,6 +171,8 @@ export interface FilterParams {
   statutResultat?: string;
   sexe?: string;
   nationalite?: string;
+  numeroDossier?: string;
+  codeEtablissement?: string;
   page?: number;
   size?: number;
   sort?: string;
@@ -260,6 +262,8 @@ const initialState = {
     statutResultat: "",
     sexe: "",
     nationalite: "",
+    numeroDossier: "",
+    codeEtablissement: "",
     page: 0,
     size: 20,
     sort: "nom,asc",
@@ -327,17 +331,20 @@ export const useCandidatStore = create<CandidatState>()((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-        const response = await axiosInstance.post(`candidats/regenerate/${numeroTable}`,{});
+      const response = await axiosInstance.post(
+        `candidats/regenerate/${numeroTable}`,
+        {},
+      );
 
-        console.log("✅ Convocation régénérée:", response.data);
-        set({ isLoading: false });
-        return response.data;
+      console.log("✅ Convocation régénérée:", response.data);
+      set({ isLoading: false });
+      return response.data;
     } catch (error: any) {
-        console.error("❌ Erreur regenerateConvocation:", error);
-        set({ error: handleError(error), isLoading: false });
-        return null;
+      console.error("❌ Erreur regenerateConvocation:", error);
+      set({ error: handleError(error), isLoading: false });
+      return null;
     }
-},
+  },
   exportZipBySerie: async () => {
     console.log("📦 exportZipBySerie - Génération du ZIP par série...");
 
@@ -451,17 +458,14 @@ export const useCandidatStore = create<CandidatState>()((set, get) => ({
   },
   // Dans votre store (Zustand)
 
-exportCandidats: async () => {
+  exportCandidats: async () => {
     console.log("📊 exportCandidats - Export des candidats...");
     set({ isLoading: true, error: null });
 
     try {
-      const response = await axiosInstance.get(
-        "candidats/me/export",
-        {
-          responseType: "blob",
-        }
-      );
+      const response = await axiosInstance.get("candidats/me/export", {
+        responseType: "blob",
+      });
 
       set({ isLoading: false });
       return response.data;
