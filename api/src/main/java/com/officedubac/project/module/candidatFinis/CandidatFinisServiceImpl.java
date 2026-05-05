@@ -238,6 +238,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     private Query buildFilterQuery(
             String keyword,
             String serie,
+            String numeroDossier,
             String jury,
             String typeCandidat,
             String statutResultat,
@@ -253,6 +254,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
                     Criteria.where("prenoms").regex(searchPattern, "i"),
                     Criteria.where("nom").regex(searchPattern, "i"),
                     Criteria.where("numeroTable").regex(searchPattern, "i"),
+                    Criteria.where("numeroDossier").regex(searchPattern, "i"),
                     Criteria.where("serie").regex(searchPattern, "i"),
                     Criteria.where("jury").regex(searchPattern, "i"),
                     Criteria.where("nationalite").regex(searchPattern, "i"),
@@ -267,6 +269,10 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         if (StringUtils.hasText(jury)) {
             criteriaList.add(Criteria.where("jury").is(jury));
+        }
+
+        if (StringUtils.hasText(jury)) {
+            criteriaList.add(Criteria.where("numeroDossier").is(numeroDossier));
         }
 
         if (StringUtils.hasText(typeCandidat)) {
@@ -397,7 +403,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAll(Pageable pageable) {
         log.info("Fetching all candidats with epreuves, pagination: {}", pageable);
-        return getWithFilters(null, null, null, null, null, null, null, pageable);
+        return getWithFilters(null, null, null, null, null, null, null,null, pageable);
     }
 
     @Override
@@ -405,6 +411,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String keyword,
             String serie,
             String jury,
+            String numeroDossier,
             String typeCandidat,
             String statutResultat,
             String sexe,
@@ -414,7 +421,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         log.info("Fetching candidats with filters and epreuves - keyword: {}, serie: {}, jury: {}, type: {}, statut: {}, sexe: {}, nationalite: {}",
                 keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
 
-        Query query = buildFilterQuery(keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
+        Query query = buildFilterQuery(keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite);
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
         query.with(pageable);
 
@@ -433,13 +440,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             return getAll(pageable);
         }
 
-        return getWithFilters(keyword.trim(), null, null, null, null, null, null, pageable);
+        return getWithFilters(keyword.trim(), null, null, null, null, null, null,null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getBySerie(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie with epreuves: {}", serieCode);
-        return getWithFilters(null, serieCode, null, null, null, null, null, pageable);
+        return getWithFilters(null, serieCode, null, null, null, null, null,null, pageable);
     }
 
     @Override
@@ -492,7 +499,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getByJury(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury with epreuves: {}", jury);
-        return getWithFilters(null, null, jury, null, null, null, null, pageable);
+        return getWithFilters(null, null, jury, null, null, null, null,null, pageable);
     }
 
     // ==================== MÉTHODES AVEC FILTRE ÉTABLISSEMENT ====================
@@ -500,7 +507,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAllByUtilisateurConnecte(Pageable pageable) {
         log.info("Fetching all candidats of connected user establishment with epreuves");
-        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null,null, pageable);
     }
 
     @Override
@@ -510,6 +517,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String jury,
             String typeCandidat,
             String statutResultat,
+            String numeroDossier,
             String sexe,
             String nationalite,
             Pageable pageable) {
@@ -518,7 +526,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         Etablissement etablissement = getEtablissementUtilisateurConnecte();
 
-        Query query = buildFilterQuery(keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite);
+        Query query = buildFilterQuery(keyword, serie, jury, typeCandidat,numeroDossier, statutResultat, sexe, nationalite);
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
@@ -534,13 +542,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getBySerieByUtilisateurConnecte(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie of connected user establishment with epreuves: {}", serieCode);
-        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null,null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getByJuryByUtilisateurConnecte(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury of connected user establishment with epreuves: {}", jury);
-        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null,null, pageable);
     }
 
     @Override
