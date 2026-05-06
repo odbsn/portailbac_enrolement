@@ -537,18 +537,18 @@ export default function CandidatsTabTable({
       setIsExporting(false);
     }
   };
-const epsTemplate = (rowData: CandidatFinis) => {
-  if (!rowData.eps) return "-";
-  
-  switch (rowData.eps) {
-    case 'A':
-      return <span className="text-green-600 font-semibold">Apte</span>;
-    case 'I':
-      return <span className="text-red-600 font-semibold">Inapte</span>;
-    default:
-      return rowData.eps;
-  }
-};
+  const epsTemplate = (rowData: CandidatFinis) => {
+    if (!rowData.eps) return "-";
+
+    switch (rowData.eps) {
+      case "A":
+        return <span className="text-green-600 font-semibold">Apte</span>;
+      case "I":
+        return <span className="text-red-600 font-semibold">Inapte</span>;
+      default:
+        return rowData.eps;
+    }
+  };
   const handleExportPdfBySerie = async (serieCode: string) => {
     if (!serieCode) {
       toast.current?.show({
@@ -977,11 +977,11 @@ const epsTemplate = (rowData: CandidatFinis) => {
 
             <Button
               onClick={handleExportAllConvocations}
-              /* disabled={isExporting || isExportingZipBySeries} */
+              disabled={isExporting || isExportingZipBySeries}
               icon="pi pi-file-pdf"
               label="Exporter toutes les convocations"
               className="p-button-info"
-              disabled={true}
+              /*  disabled={true} */
             />
           </div>
         </div>
@@ -1255,12 +1255,12 @@ const epsTemplate = (rowData: CandidatFinis) => {
               header="Nationalité"
               style={{ maxWidth: "6rem" }}
             />
-            <Column 
-                field="eps" 
-                header="EPS" 
-                body={epsTemplate}  // ← Utilisez le template au lieu du field direct
-                style={{ maxWidth: "3rem" }} 
-              />
+            <Column
+              field="eps"
+              header="EPS"
+              body={epsTemplate} // ← Utilisez le template au lieu du field direct
+              style={{ maxWidth: "3rem" }}
+            />
             <Column
               header="Matière fac."
               body={matiereFacultativeTemplate}
