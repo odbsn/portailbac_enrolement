@@ -31,6 +31,7 @@ public class CandidatFinisRequest {
     private String ef1;
     private String ef2;
     private String centreEcrit;
+    private String centreEcritParticulier;
     private String typeCandidat;
     private String codeEtatCivil;
     private String libEtatCivil;

@@ -55,7 +55,6 @@ public class CandidatFinis {
     private Etablissement centreEcrit;
     private String codeCES;
     private String centreEcritParticulier;
-
     private String statutResultat;
     private String typeCandidat;
 
