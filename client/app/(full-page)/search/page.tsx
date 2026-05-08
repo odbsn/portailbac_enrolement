@@ -160,7 +160,7 @@ export default function AuthentificationCandidat() {
   };
 
  const sanitizeCodeEtablissement = (value: string): string => {
-    return value.toUpperCase();
+    return value.toUpperCase().replace(/\s/g, '');
 };
   const sanitizeNumeroTable = (value: string): string => {
     return value.replace(/[^0-9]/g, "");
