@@ -577,41 +577,41 @@ public class CandidatImportService {
     private ValidationResult validateAllEtablissements(CandidatExcelDto dto, ImportResult result) {
         List<String> missingEtablissements = new ArrayList<>();
 
-        // Validation par NOM pour l'établissement principal
-        String etablissementNom = safeTrim(dto.getEtablissement());
-        if (etablissementNom != null && !etablissementNom.isEmpty()) {
-            if (etablissementByNameMap.get(etablissementNom.toLowerCase()) == null) {
-                missingEtablissements.add("Établissement: '" + etablissementNom + "'");
-                result.addMissingEtablissement(etablissementNom);
+        // 1. Établissement principal - par CODE (OBLIGATOIRE)
+        String etablissementCode = safeTrim(dto.getCodeEtsProvenance());
+        if (etablissementCode != null && !etablissementCode.isEmpty()) {
+            if (etablissementByCodeMap.get(etablissementCode.toLowerCase()) == null) {
+                missingEtablissements.add("Établissement (code): '" + etablissementCode + "'");
+                result.addMissingEtablissement(etablissementCode);
             }
         } else {
             result.addMissingEtablissement(null);
-            return new ValidationResult(false, "Établissement principal manquant");
+            return new ValidationResult(false, "Code établissement principal manquant");
         }
 
-        // Validation par NOM pour le centre d'écrit
-        String centreEcritNom = safeTrim(dto.getCentreEcrit());
-        if (centreEcritNom != null && !centreEcritNom.isEmpty()) {
-            if (etablissementByNameMap.get(centreEcritNom.toLowerCase()) == null) {
-                missingEtablissements.add("Centre d'écrit: '" + centreEcritNom + "'");
-                result.addMissingCentreEcrit(centreEcritNom);
+        // 2. Centre d'écrit - par CODE (OBLIGATOIRE)
+        String centreEcritCode = safeTrim(dto.getCodeCentreEcrit());
+        if (centreEcritCode != null && !centreEcritCode.isEmpty()) {
+            if (etablissementByCodeMap.get(centreEcritCode.toLowerCase()) == null) {
+                missingEtablissements.add("Centre d'écrit (code): '" + centreEcritCode + "'");
+                result.addMissingCentreEcrit(centreEcritCode);
             }
         } else {
             result.addMissingCentreEcrit(null);
-            return new ValidationResult(false, "Centre d'écrit manquant");
+            return new ValidationResult(false, "Code centre d'écrit manquant");
         }
 
-        // Validation par CODE pour le centre act EPS
-        String centreActEPSCode = safeTrim(dto.getCentreActEPS());
+        // 3. Centre act EPS - par CODE (OPTIONNEL)
+        String centreActEPSCode = safeTrim(dto.getCodeCentreActEPS());
         if (centreActEPSCode != null && !centreActEPSCode.isEmpty()) {
             if (etablissementByCodeMap.get(centreActEPSCode.toLowerCase()) == null) {
-                missingEtablissements.add("Centre act EPS (code): '" + centreActEPSCode + "'");
-                result.addMissingCentreEPS(centreActEPSCode);
+                // Optionnel: on log juste mais on ne bloque pas l'import
+                log.debug("Centre act EPS (code) non trouvé: '{}'", centreActEPSCode);
+                // Si vous voulez quand même enregistrer pour analyse:
+                // result.addMissingCentreEPS(centreActEPSCode);
             }
-        } else {
-            result.addMissingCentreEPS(null);
-            return new ValidationResult(false, "Centre act EPS manquant");
         }
+        // ✅ Si le champ est vide ou null, on continue sans erreur
 
         if (!missingEtablissements.isEmpty()) {
             return new ValidationResult(false, "Établissements non trouvés: " + String.join(", ", missingEtablissements));
@@ -623,26 +623,32 @@ public class CandidatImportService {
     /**
      * Convertit DTO en entité avec gestion sécurisée des types
      */
+    /**
+     * Convertit DTO en entité avec gestion sécurisée des types
+     */
     private CandidatFinis convertToEntityWithExistingRefs(CandidatExcelDto dto, ValidationResult validation) {
-        // Établissement principal - par NOM
-        String etablissementNom = safeTrim(dto.getEtablissement());
-        Etablissement etablissement = etablissementByNameMap.get(etablissementNom.toLowerCase());
 
-        // Centre d'écrit - par NOM
-        String centreEcritNom = safeTrim(dto.getCentreEcrit());
-        Etablissement centreEcrit = etablissementByNameMap.get(centreEcritNom.toLowerCase());
-
-        // Centre act EPS - par CODE
-        String centreActEPSCode = safeTrim(dto.getCentreActEPS());
-        Etablissement centreActEPS = etablissementByCodeMap.get(centreActEPSCode.toLowerCase());
-
-        // Centre examen - par NOM (ville)
-        String centreExamenNom = safeTrim(dto.getCentreExamen());
-        Ville centreExamen = null;
-        if (centreExamenNom != null && !centreExamenNom.isEmpty()) {
-            centreExamen = villeMap.get(centreExamenNom.toLowerCase());
+        // 1. Établissement principal - par CODE
+        String etablissementCode = safeTrim(dto.getCodeEtsProvenance());
+        Etablissement etablissement = null;
+        if (etablissementCode != null && !etablissementCode.isEmpty()) {
+            etablissement = etablissementByCodeMap.get(etablissementCode.toLowerCase());
         }
 
+        // 2. Centre d'écrit - par CODE
+        String centreEcritCode = safeTrim(dto.getCodeCentreEcrit());
+        Etablissement centreEcrit = null;
+        if (centreEcritCode != null && !centreEcritCode.isEmpty()) {
+            centreEcrit = etablissementByCodeMap.get(centreEcritCode.toLowerCase());
+        }
+
+        // 3. Centre act EPS - par CODE (OPTIONNEL)
+        String centreActEPSCode = safeTrim(dto.getCodeCentreActEPS());
+        Etablissement centreActEPS = null;
+        if (centreActEPSCode != null && !centreActEPSCode.isEmpty()) {
+            centreActEPS = etablissementByCodeMap.get(centreActEPSCode.toLowerCase());
+            // ✅ Peut être null si le code n'existe pas
+        }
         return CandidatFinis.builder()
                 .prenoms(safeTrim(dto.getPrenoms()))
                 .nom(safeTrim(dto.getNom()))
@@ -657,7 +663,7 @@ public class CandidatImportService {
                 .eps(safeTrim(dto.getEps()))
                 .numeroDossier(safeTrim(dto.getNumeroDossier()))
                 .etablissement(etablissement)
-                .centreExamen(centreExamen)
+//                .centreExamen(centreExamen)
                 .mo1(safeTrim(dto.getMo1()))
                 .mo2(safeTrim(dto.getMo2()))
                 .mo3(safeTrim(dto.getMo3()))
@@ -678,7 +684,7 @@ public class CandidatImportService {
                 .dossierEnAttente(safeTrim(dto.getDossierEnAttente()))
                 .resultat(safeTrim(dto.getResultat()))
                 .raisonRejet(safeTrim(dto.getRaisonRejet()))
-                .centreActEPS(centreActEPS)
+                .centreActEPS(centreActEPS)  // ✅ Peut être null
                 .datePassageEPS(safeTrim(dto.getDatePassageEPS()))
                 .npEC(safeTrim(dto.getNpEC()))
                 .idOrigine(safeTrim(dto.getIdOrigine()))

@@ -61,6 +61,10 @@ public class CandidatExcelDto {
     @ExcelProperty("Etablissement")
     @ColumnWidth(30)
     private String etablissement;
+    // PROVENANCE
+    @ExcelProperty("Code Ets.\nProvenance")
+    @ColumnWidth(15)
+    private String codeEtsProvenance;
 
     @ExcelProperty("Centre d'examen")
     @ColumnWidth(20)
@@ -102,6 +106,10 @@ public class CandidatExcelDto {
     @ExcelProperty("Centre d'Ecrit")
     @ColumnWidth(20)
     private String centreEcrit;
+
+    @ExcelProperty("Code Centre d'Ecrit")
+    @ColumnWidth(20)
+    private String codeCentreEcrit;
 
     @ExcelProperty("Code\nCES")
     @ColumnWidth(10)
@@ -151,6 +159,10 @@ public class CandidatExcelDto {
     @ColumnWidth(15)
     private String centreActEPS;
 
+    @ExcelProperty("Code Centre\nAct. EPS")
+    @ColumnWidth(15)
+    private String CodeCentreActEPS;
+
     @ExcelProperty("Date de \npassage EPS")
     @ColumnWidth(15)
     private String datePassageEPS;
@@ -179,11 +191,6 @@ public class CandidatExcelDto {
     @ExcelProperty("Série\nà l'ODAE")
     @ColumnWidth(12)
     private String serieODAE;
-
-    // PROVENANCE
-    @ExcelProperty("Code Ets.\nProvenance")
-    @ColumnWidth(15)
-    private String codeEtsProvenance;
 
     @ExcelProperty("Pas de\nResultat")
     @ColumnWidth(12)
