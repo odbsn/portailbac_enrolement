@@ -68,10 +68,7 @@ export default function DetailCandidatDialog({
     candidat.mo3,
   ].filter(Boolean);
 
-  const matieresFacultatives = [
-    candidat.ef1,
-    candidat.ef2,
-  ].filter(Boolean);
+  const matieresFacultatives = [candidat.ef1, candidat.ef2].filter(Boolean);
 
   const footer = (
     <div className="flex justify-content-end gap-3">
@@ -82,13 +79,13 @@ export default function DetailCandidatDialog({
         text
         className="p-button-text"
       />
-      {/* <ConvocationButton 
-    numeroTable={candidat.numeroTable}
-    label="Télécharger la convocation"
-    icon="pi pi-file-pdf"
-    className="p-button-text"
-    circular={false}
-/> */}
+      <ConvocationButton
+        numeroTable={candidat.numeroTable}
+        label="Télécharger la convocation"
+        icon="pi pi-file-pdf"
+        className="p-button-text"
+        circular={false}
+      />
     </div>
   );
 

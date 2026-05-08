@@ -52,8 +52,8 @@ export default function ConvocationButton({
         label={label}
         onClick={handleGenerate}
         loading={isLoading}
-        /* disabled={isLoading} */
-        disabled={true}
+        disabled={isLoading}
+        /* disabled={true} */
         severity="success"
         rounded
         text
