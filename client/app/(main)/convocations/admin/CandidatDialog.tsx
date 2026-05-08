@@ -15,6 +15,10 @@ import { InputNumber } from "primereact/inputnumber";
 import { Toast } from "primereact/toast";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Badge } from "primereact/badge";
+import {
+  AutoComplete,
+  AutoCompleteCompleteEvent,
+} from "primereact/autocomplete";
 import { useCandidatStore, CandidatFinis } from "../convocationStore";
 import axiosInstance from "@/app/api/axiosInstance";
 import { ParametrageService } from "@/demo/service/ParametrageService";
@@ -161,6 +165,207 @@ export interface CandidatDialogRef {
   close: () => void;
 }
 
+// Composant de recherche d'établissement avec Dropdown et virtualScroller
+const EtablissementDropdown = React.memo(
+  ({
+    value,
+    onChange,
+    placeholder = "Sélectionner un établissement...",
+    required = false,
+    label = "Établissement",
+  }: {
+    value: any;
+    onChange: (value: any) => void;
+    placeholder?: string;
+    required?: boolean;
+    label?: string;
+  }) => {
+    const [options, setOptions] = useState<{ label: string; value: string }[]>(
+      [],
+    );
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      const loadOptions = async () => {
+        setLoading(true);
+        try {
+          const etablissements = await ParametrageService.getEtablissements();
+          console.log("Établissements chargés:", etablissements?.length);
+          const formattedOptions = (etablissements || []).map((e: any) => ({
+            label: e.name || e.nom,
+            value: e.id,
+          }));
+          setOptions(formattedOptions);
+        } catch (error) {
+          console.error("Erreur chargement établissements:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadOptions();
+    }, []);
+
+    return (
+      <div className="input-wrapper">
+        <label className="input-label">{label}</label>
+        <Dropdown
+          value={value}
+          options={options}
+          onChange={(e) => onChange(e.value)}
+          placeholder={placeholder}
+          showClear
+          loading={loading}
+          virtualScrollerOptions={{
+            itemSize: 38,
+            showLoader: true,
+            delay: 0,
+          }}
+          filter
+          filterBy="label"
+          filterPlaceholder="Rechercher un établissement..."
+          className="w-full"
+          panelStyle={{ maxHeight: "400px" }}
+          style={{ width: "100%" }}
+        />
+      </div>
+    );
+  },
+);
+
+EtablissementDropdown.displayName = "EtablissementDropdown";
+
+// Composant de recherche de ville avec AutoComplete
+const VilleSearch = React.memo(
+  ({
+    value,
+    onChange,
+    placeholder = "Rechercher une ville...",
+    required = false,
+    label = "Lieu de naissance",
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    required?: boolean;
+    label?: string;
+  }) => {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredOptions, setFilteredOptions] = useState<any[]>([]);
+    const [allOptions, setAllOptions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    // Chargement initial des options
+    useEffect(() => {
+      const loadOptions = async () => {
+        setLoading(true);
+        try {
+          const villes = await ParametrageService.getVilles();
+          const formattedOptions = (villes || []).map((v: any) => ({
+            label: v.name || v.nom,
+            value: v.id,
+          }));
+          setAllOptions(formattedOptions);
+          setFilteredOptions([]);
+        } catch (error) {
+          console.error("Erreur chargement villes:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadOptions();
+    }, []);
+
+    // Recherche avec debounce
+    const searchVilles = useCallback(
+      (query: string) => {
+        if (searchTimeout.current) {
+          clearTimeout(searchTimeout.current);
+        }
+
+        searchTimeout.current = setTimeout(() => {
+          if (!query || query.length < 2) {
+            setFilteredOptions([]);
+            return;
+          }
+
+          const filtered = allOptions.filter((option) =>
+            option.label.toLowerCase().includes(query.toLowerCase()),
+          );
+          setFilteredOptions(filtered.slice(0, 30));
+        }, 300);
+      },
+      [allOptions],
+    );
+
+    const handleSearch = (event: AutoCompleteCompleteEvent) => {
+      const query = event.query;
+      setSearchQuery(query);
+      searchVilles(query);
+    };
+
+    // Récupérer le libellé sélectionné pour l'affichage
+    const displayValue = useMemo(() => {
+      if (searchQuery) return searchQuery;
+      if (value) return value;
+      return "";
+    }, [searchQuery, value]);
+
+    return (
+      <div className="input-wrapper">
+        <label className="input-label">
+          {label}
+          {required && <span className="required-star">*</span>}
+        </label>
+        <AutoComplete
+          value={displayValue}
+          suggestions={filteredOptions}
+          completeMethod={handleSearch}
+          field="label"
+          placeholder={placeholder}
+          onChange={(e) => {
+            if (typeof e.value === "string") {
+              setSearchQuery(e.value);
+              if (e.value.trim() === "") {
+                onChange("");
+              }
+            } else if (
+              e.value &&
+              typeof e.value === "object" &&
+              e.value.label
+            ) {
+              onChange(e.value.label);
+              setSearchQuery(e.value.label);
+            } else {
+              onChange("");
+              setSearchQuery("");
+            }
+          }}
+          onSelect={(e) => {
+            onChange(e.value.label);
+            setSearchQuery(e.value.label);
+          }}
+          delay={300}
+          dropdown
+          forceSelection={false}
+        />
+        {loading && (
+          <i
+            className="pi pi-spin pi-spinner"
+            style={{
+              position: "absolute",
+              right: "10px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+        )}
+      </div>
+    );
+  },
+);
+
+VilleSearch.displayName = "VilleSearch";
 
 const ElegantDatePicker = React.memo(
   ({
@@ -176,11 +381,9 @@ const ElegantDatePicker = React.memo(
     required?: boolean;
     label?: string;
   }) => {
-    // Formatage de la date pour l'affichage (quel que soit le format d'entrée)
     const formatDate = (dateStr: string | null | undefined): string => {
       if (!dateStr || dateStr === "") return "";
 
-      // Si c'est déjà au format DD/MM/YYYY
       if (typeof dateStr === "string" && dateStr.includes("/")) {
         const parts = dateStr.split("/");
         if (parts.length === 3) {
@@ -191,7 +394,6 @@ const ElegantDatePicker = React.memo(
         }
       }
 
-      // Si c'est au format YYYY-MM-DD
       if (typeof dateStr === "string" && dateStr.includes("-")) {
         const parts = dateStr.split("-");
         if (parts.length === 3) {
@@ -202,7 +404,6 @@ const ElegantDatePicker = React.memo(
         }
       }
 
-      // Si c'est un objet Date
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return "";
       const day = String(date.getDate()).padStart(2, "0");
@@ -211,7 +412,6 @@ const ElegantDatePicker = React.memo(
       return `${day}/${month}/${year}`;
     };
 
-    // Parsing de la date (DD/MM/YYYY -> Date)
     const parseDate = (dateStr: string): Date | null => {
       if (!dateStr || dateStr === "") return null;
       const parts = dateStr.split("/");
@@ -238,16 +438,13 @@ const ElegantDatePicker = React.memo(
       return null;
     };
 
-    // Convertir n'importe quel format de date en Date
     const parseAnyDate = (dateStr: string): Date | null => {
       if (!dateStr || dateStr === "") return null;
 
-      // Si c'est au format DD/MM/YYYY
       if (dateStr.includes("/")) {
         return parseDate(dateStr);
       }
 
-      // Si c'est au format YYYY-MM-DD
       if (dateStr.includes("-")) {
         const parts = dateStr.split("-");
         if (parts.length === 3) {
@@ -262,7 +459,6 @@ const ElegantDatePicker = React.memo(
       return null;
     };
 
-    // Formater Date en YYYY-MM-DD pour l'API
     const formatToISODate = (date: Date): string => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -286,7 +482,6 @@ const ElegantDatePicker = React.memo(
     const panelRef = useRef<HTMLDivElement>(null);
     const isTypingRef = useRef(false);
 
-    // Mettre à jour la date externe (envoie YYYY-MM-DD)
     const updateExternalDate = (date: Date | null) => {
       setSelectedDate(date);
       if (date) {
@@ -296,12 +491,10 @@ const ElegantDatePicker = React.memo(
       }
     };
 
-    // Gestion de la saisie manuelle avec auto-formatage
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       isTypingRef.current = true;
       let rawValue = e.target.value;
 
-      // Ne garder que les chiffres et les slashs
       let numbers = rawValue.replace(/[^0-9/]/g, "");
       numbers = numbers.replace(/\/{2,}/g, "/");
 
@@ -350,7 +543,6 @@ const ElegantDatePicker = React.memo(
       }, 100);
     };
 
-    // Synchroniser l'affichage avec la valeur externe
     useEffect(() => {
       if (!isTypingRef.current) {
         const validDate = parseAnyDate(value);
@@ -365,7 +557,6 @@ const ElegantDatePicker = React.memo(
       }
     }, [value]);
 
-    // Gestion de la perte de focus
     const handleBlur = () => {
       setTimeout(() => {
         if (!containerRef.current?.contains(document.activeElement)) {
@@ -389,7 +580,6 @@ const ElegantDatePicker = React.memo(
       }, 150);
     };
 
-    // Gestion des touches clavier
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       switch (e.key) {
         case "Enter":
@@ -435,7 +625,6 @@ const ElegantDatePicker = React.memo(
       }
     };
 
-    // Gestion de la sélection dans le calendrier
     const handleDateSelect = (date: Date) => {
       updateExternalDate(date);
       setInputValue(formatDate(formatToISODate(date)));
@@ -444,7 +633,6 @@ const ElegantDatePicker = React.memo(
       inputRef.current?.focus();
     };
 
-    // Navigation mois
     const prevMonth = () => {
       setCurrentMonth(
         new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
@@ -457,7 +645,6 @@ const ElegantDatePicker = React.memo(
       );
     };
 
-    // Génération du calendrier
     const generateCalendar = () => {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
@@ -503,7 +690,6 @@ const ElegantDatePicker = React.memo(
 
     const calendarDays = generateCalendar();
 
-    // Gestion du clic en dehors
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (
@@ -519,7 +705,6 @@ const ElegantDatePicker = React.memo(
         document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Ajustement de la largeur du panel
     useEffect(() => {
       if (isOpen && inputRef.current && panelRef.current) {
         const inputWidth = inputRef.current.offsetWidth;
@@ -666,6 +851,29 @@ const InputField = React.memo(
               onChange={(e) => onValueChange(field, e.value)}
               placeholder="Sélectionner..."
               showClear
+              virtualScrollerOptions={{
+                itemSize: 38,
+                showLoader: true,
+                delay: 250,
+              }}
+            />
+          );
+        case "etablissement":
+          return (
+            <EtablissementDropdown
+              value={value}
+              onChange={(newValue) => onValueChange(field, newValue)}
+              placeholder={placeholder}
+              required={required}
+              label=""
+            />
+          );
+        case "ville":
+          return (
+            <InputText
+              value={(value as string) || ""}
+              onChange={(e) => onValueChange(field, e.target.value)}
+              placeholder={placeholder}
             />
           );
         default:
@@ -736,12 +944,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [activeSection, setActiveSection] = useState("general");
-    const [etablissementOptions, setEtablissementOptions] = useState<
-      { label: string; value: string }[]
-    >([]);
-    const [villeOptions, setVilleOptions] = useState<
-      { label: string; value: string }[]
-    >([]);
 
     const [formData, setFormData] = useState<Partial<CandidatFinis>>({
       prenoms: "",
@@ -764,6 +966,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       ef1: "",
       ef2: "",
       centreEcrit: undefined,
+      centreEcritParticulier: undefined,
       typeCandidat: "",
       codeEtatCivil: "",
       libEtatCivil: "",
@@ -773,7 +976,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       handicap: "",
     });
 
-    // Optimisation des options avec useMemo
     const serieOptionsMemo = useMemo(
       () => SERIE_OPTIONS.map((opt) => ({ label: opt, value: opt })),
       [],
@@ -836,7 +1038,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       [],
     );
 
-    // Fonctions de navigation optimisées avec useCallback
     const goToPreviousSection = useCallback(() => {
       const currentIndex = SECTIONS.findIndex(
         (section) => section.id === activeSection,
@@ -855,7 +1056,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       }
     }, [activeSection]);
 
-    // Fonction handleInputChange optimisée
     const handleInputChange = useCallback(
       (field: keyof CandidatFinis, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -863,40 +1063,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       [],
     );
 
-    // Chargement des options au montage uniquement
-    useEffect(() => {
-      const loadOptions = async () => {
-        try {
-          const etablissements = await ParametrageService.getEtablissements();
-          const villes = await ParametrageService.getVilles();
-
-          setEtablissementOptions(
-            (etablissements || []).map((e: any) => ({
-              label: e.name || e.nom,
-              value: e.id,
-            })),
-          );
-
-          setVilleOptions(
-            (villes || []).map((v: any) => ({
-              label: v.name || v.nom,
-              value: v.id,
-            })),
-          );
-        } catch (error) {
-          console.error("Erreur chargement options:", error);
-          toast.current?.show({
-            severity: "error",
-            summary: "Erreur",
-            detail: "Impossible de charger les options",
-            life: 5000,
-          });
-        }
-      };
-      loadOptions();
-    }, []);
-
-    // Gestion de la visibilité et chargement des données
     useEffect(() => {
       if (visible && externalId) {
         loadCandidatData(externalId);
@@ -912,7 +1078,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         const response = await axiosInstance.get(`/candidats/${id}`);
         const data = response.data;
 
-        // Correction: extraction correcte des IDs
         const getEtablissementId = (etab: any) => {
           if (!etab) return undefined;
           if (typeof etab === "string") return etab;
@@ -928,6 +1093,9 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           centreActEPS: getEtablissementId(data.centreActEPS),
           centreEcrit: getEtablissementId(data.centreEcrit),
           centreExamen: getEtablissementId(data.centreExamen),
+          centreEcritParticulier: getEtablissementId(
+            data.centreEcritParticulier,
+          ),
         });
         setIsEditing(true);
       } catch (error) {
@@ -965,6 +1133,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         ef1: "",
         ef2: "",
         centreEcrit: undefined,
+        centreEcritParticulier: undefined,
         typeCandidat: "",
         codeEtatCivil: "",
         libEtatCivil: "",
@@ -1077,6 +1246,9 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           centreExamen: extractEtablissementId(formData.centreExamen),
           centreActEPS: extractEtablissementId(formData.centreActEPS),
           centreEcrit: extractEtablissementId(formData.centreEcrit),
+          centreEcritParticulier: extractEtablissementId(
+            formData.centreEcritParticulier,
+          ),
         };
 
         let result;
@@ -1319,7 +1491,8 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                         <InputField
                           label="Lieu naissance"
                           field="lieuNaissance"
-                          placeholder="Lieu de naissance"
+                          type="ville"
+                          placeholder="Rechercher une ville..."
                           required
                           value={formData.lieuNaissance}
                           onValueChange={handleInputChange}
@@ -1496,11 +1669,11 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                     <FormRow>
                       <FormCol size={6}>
                         <InputField
-                          label="Etablissement"
+                          label="Établissement"
                           field="etablissement"
-                          type="dropdown"
+                          type="etablissement"
                           required
-                          options={etablissementOptions}
+                          placeholder="Sélectionner un établissement..."
                           value={formData.etablissement}
                           onValueChange={handleInputChange}
                         />
@@ -1509,23 +1682,52 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                         <InputField
                           label="Centre EPS"
                           field="centreActEPS"
-                          type="dropdown"
+                          type="etablissement"
                           required
-                          options={etablissementOptions}
+                          placeholder="Sélectionner un établissement..."
                           value={formData.centreActEPS}
                           onValueChange={handleInputChange}
                         />
                       </FormCol>
-                      <FormCol size={12}>
+                      <FormCol size={6}>
                         <InputField
                           label="Centre écrit"
                           field="centreEcrit"
-                          type="dropdown"
+                          type="etablissement"
                           required
-                          options={etablissementOptions}
+                          placeholder="Sélectionner un établissement..."
                           value={formData.centreEcrit}
                           onValueChange={handleInputChange}
                         />
+                      </FormCol>
+
+                      <FormCol size={6}>
+                        <InputField
+                          label="Centre écrit particulier"
+                          field="centreEcritParticulier"
+                          type="etablissement"
+                          placeholder="Sélectionner un établissement (optionnel)"
+                          value={formData.centreEcritParticulier}
+                          onValueChange={handleInputChange}
+                        />
+                        <div
+                          className="field-description"
+                          style={{
+                            fontSize: "0.7rem",
+                            color: "#64748b",
+                            marginTop: "0.25rem",
+                          }}
+                        >
+                          <i
+                            className="pi pi-info-circle"
+                            style={{
+                              fontSize: "0.65rem",
+                              marginRight: "0.25rem",
+                            }}
+                          />
+                          Sélectionnez un établissement pour un centre d'écrit
+                          particulier
+                        </div>
                       </FormCol>
                     </FormRow>
                   </FormCard>
@@ -1828,6 +2030,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
 
           .input-wrapper {
             margin-bottom: 0;
+            position: relative;
           }
           .input-label {
             display: block;
@@ -1841,6 +2044,10 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           .required-star {
             color: #ef4444;
             margin-left: 0.25rem;
+          }
+
+          .w-full {
+            width: 100%;
           }
 
           .p-dropdown .p-dropdown-label,
@@ -2166,7 +2373,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
             color: #1e293b !important;
           }
 
-          /* Pour le placeholder */
           .p-inputtext::placeholder,
           .p-dropdown .p-dropdown-label.p-placeholder,
           .date-input::placeholder,
@@ -2174,22 +2380,18 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
             color: #94a3b8 !important;
           }
 
-          /* Pour les dropdowns quand une valeur est sélectionnée */
           .p-dropdown .p-dropdown-label {
             color: #1e293b !important;
           }
 
-          /* Pour le composant DatePicker */
           .date-input {
             color: #1e293b !important;
           }
 
-          /* Pour les labels */
           .input-label {
             color: #475569 !important;
           }
 
-          /* Pour le texte dans les champs désactivés */
           .p-inputtext:disabled,
           .p-dropdown:disabled .p-dropdown-label,
           .date-input:disabled {
