@@ -1239,9 +1239,21 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           return undefined;
         };
 
+        const formatDateForBackend = (
+          dateStr: string | undefined,
+        ): string | undefined => {
+          if (!dateStr) return undefined;
+          // Si déjà au format DD/MM/YYYY, on laisse tel quel
+          if (dateStr.includes("/")) return dateStr;
+          // Conversion de YYYY-MM-DD → DD/MM/YYYY
+          const parts = dateStr.split("-");
+          if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          return dateStr;
+        };
+
         const submitData = {
           ...formData,
-          dateNaissance: formData.dateNaissance || undefined,
+          dateNaissance: formatDateForBackend(formData.dateNaissance),
           etablissement: extractId(formData.etablissement),
           centreExamen: extractId(formData.centreExamen),
           centreActEPS: extractId(formData.centreActEPS),
