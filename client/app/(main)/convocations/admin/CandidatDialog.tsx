@@ -975,6 +975,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       numeroTable: "",
       jury: "",
       serie: "",
+      numeroDossier: "",
       sexe: "",
       age: undefined,
       eps: "",
@@ -1125,6 +1126,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         numeroTable: "",
         jury: "",
         serie: "",
+        numeroDossier: "",
         sexe: "",
         age: undefined,
         eps: "",
@@ -1514,6 +1516,15 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                 <FormRow>
                   <FormCol size={2}>
                     <InputField
+                      label="N° dossier"
+                      field="numeroDossier"
+                      placeholder="N° dossier"
+                      value={formData.numeroDossier}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
                       label="Sexe"
                       field="sexe"
                       type="dropdown"
@@ -1564,6 +1575,9 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                       onValueChange={handleInputChange}
                     />
                   </FormCol>
+                </FormRow>
+
+                <FormRow>
                   <FormCol size={2}>
                     <InputField
                       label="Jury"
@@ -1574,9 +1588,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                       onValueChange={handleInputChange}
                     />
                   </FormCol>
-                </FormRow>
-
-                <FormRow>
                   <FormCol size={2}>
                     <InputField
                       label="Type candidat"
@@ -1609,7 +1620,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
                       onValueChange={handleInputChange}
                     />
                   </FormCol>
-                  <FormCol size={3}>
+                  <FormCol size={2}>
                     <InputField
                       label="Centre état civil"
                       field="libEtatCivil"
