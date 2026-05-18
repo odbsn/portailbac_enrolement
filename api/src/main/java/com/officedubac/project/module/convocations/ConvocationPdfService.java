@@ -147,7 +147,6 @@ public class ConvocationPdfService {
                         .setPadding(1)
                         .setMarginTop(1)
         );
-
         headerGrid.addCell(cellCenter);
         Cell cellRight = new Cell()
                 .setBorder(Border.NO_BORDER)
