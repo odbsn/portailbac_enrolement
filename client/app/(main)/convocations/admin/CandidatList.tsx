@@ -24,6 +24,7 @@ import { useSerieStore } from "../etablissements/serieStore";
 import RegenerateConvocationButton from "./RegenerateConvocationButton";
 import ConvocationButton from "./ConvocationButtonAdmin";
 import { Divide } from "lucide-react";
+import ImportExcelModal from "./ImportExcelModal";
 
 interface CandidatsTabTableProps {
   onViewCandidat?: (candidat: CandidatFinis) => void;
@@ -74,6 +75,7 @@ export default function CandidatsTabTable({
   const [etablissementCodeFilter, setEtablissementCodeFilter] =
     useState<string>("");
   const [numeroDossierFilter, setNumeroDossierFilter] = useState<string>("");
+  const [importModalVisible, setImportModalVisible] = useState(false);
   const [rows, setRows] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
   const [convocationSerie, setConvocationSerie] = useState<string>("");
@@ -722,13 +724,21 @@ export default function CandidatsTabTable({
               </div>
             }
             right={
-              <Button
-                label="Nouveau candidat"
-                icon="pi pi-plus"
-                severity="success"
-                onClick={handleAddCandidat}
-              />
-            }
+                <div className="flex gap-2">
+                  <Button
+                    label="Importer Excel"
+                    icon="pi pi-upload"
+                    severity="info"
+                    onClick={() => setImportModalVisible(true)}
+                  />
+                  <Button
+                    label="Nouveau candidat"
+                    icon="pi pi-plus"
+                    severity="success"
+                    onClick={handleAddCandidat}
+                  />
+                </div>
+              }
             className="border-none bg-transparent p-0"
           />
         </div>
@@ -1065,6 +1075,19 @@ export default function CandidatsTabTable({
             />
           </DataTable>
         </div>
+        <ImportExcelModal
+  open={importModalVisible}
+  onClose={() => setImportModalVisible(false)}
+  onSuccess={() => {
+    fetchCandidats();
+    toast.current?.show({
+      severity: "success",
+      summary: "Import terminé",
+      detail: "La liste des candidats a été mise à jour",
+      life: 3000,
+    });
+  }}
+/>
       </div>
 
       <style jsx global>{`

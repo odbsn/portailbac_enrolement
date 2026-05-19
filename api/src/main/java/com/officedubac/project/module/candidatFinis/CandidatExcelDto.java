@@ -122,7 +122,6 @@ public class CandidatExcelDto {
     @ExcelProperty("S. R")
     @ColumnWidth(8)
     private String statutResultat;
-
     @ExcelProperty("Type\nCandidat")
     @ColumnWidth(12)
     private String typeCandidat;

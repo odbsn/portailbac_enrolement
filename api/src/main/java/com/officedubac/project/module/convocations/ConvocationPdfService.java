@@ -147,7 +147,6 @@ public class ConvocationPdfService {
                         .setPadding(1)
                         .setMarginTop(1)
         );
-
         headerGrid.addCell(cellCenter);
         Cell cellRight = new Cell()
                 .setBorder(Border.NO_BORDER)
@@ -296,6 +295,9 @@ public class ConvocationPdfService {
             miniTable.addCell(createHeaderCell(h, 8, boldFont));
         }
 
+        log.info("Centre particulier = [{}]", c.getCentreEcritParticulier());
+        log.info("Centre principal = [{}]",
+                c.getCentreEcrit() != null ? c.getCentreEcrit().getName() : "null");
         String centreEcrit = c.getCentreEcritParticulier() != null
                 ? c.getCentreEcritParticulier()
                 : (c.getCentreEcrit() != null ? c.getCentreEcrit().getName() : "-");
@@ -1275,6 +1277,7 @@ public class ConvocationPdfService {
 
     private CandidatFinis convertToEntity(CandidatFinisResponse response) {
         CandidatFinis entity = new CandidatFinis();
+
         entity.setId(response.getId());
         entity.setNumeroTable(response.getNumeroTable());
         entity.setNom(response.getNom());
@@ -1287,18 +1290,28 @@ public class ConvocationPdfService {
         entity.setSexe(response.getSexe());
         entity.setTypeCandidat(response.getTypeCandidat());
         entity.setEps(response.getEps());
+
         entity.setEtablissement(response.getEtablissement());
+
+        // IMPORTANT
         entity.setCentreEcrit(response.getCentreEcrit());
+        entity.setCentreEcritParticulier(response.getCentreEcritParticulier());
+
         entity.setCentreActEPS(response.getCentreActEPS());
+
         entity.setMo1(response.getMo1());
         entity.setMo2(response.getMo2());
         entity.setMo3(response.getMo3());
+
         entity.setEf1(response.getEf1());
         entity.setEf2(response.getEf2());
+
         entity.setCentreMatFac1(response.getCentreMatFac1());
         entity.setLibMatFac1(response.getLibMatFac1());
+
         entity.setCentreMatFac2(response.getCentreMatFac2());
         entity.setLibMatFac2(response.getLibMatFac2());
+
         return entity;
     }
     /**

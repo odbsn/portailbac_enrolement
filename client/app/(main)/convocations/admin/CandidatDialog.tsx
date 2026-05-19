@@ -23,7 +23,8 @@ import { useCandidatStore, CandidatFinis } from "../convocationStore";
 import axiosInstance from "@/app/api/axiosInstance";
 import { ParametrageService } from "@/demo/service/ParametrageService";
 
-// Constantes déplacées en dehors du composant pour éviter les recréations
+// ==================== CONSTANTES ====================
+
 const SERIE_OPTIONS = [
   "STEG",
   "S2",
@@ -138,20 +139,100 @@ const MO3_OPTIONS = [
   "Latin",
 ];
 
-const SECTIONS = [
-  {
-    id: "general",
-    label: "Informations générales",
-    icon: "pi-id-card",
-    color: "#3b82f6",
+// ==================== CONFIG OPTIONS PAR SÉRIE ====================
+
+interface SerieOptionConfig {
+  count: number;
+  labels: string[];
+  required: boolean[];
+  mo1Options?: { label: string; value: string }[];
+  mo2Options?: { label: string; value: string }[];
+  mo3Options?: { label: string; value: string }[];
+}
+
+const toOpts = (arr: string[]) => arr.map((o) => ({ label: o, value: o }));
+
+// Toutes les matières optionnelles sont NON obligatoires (required: false)
+const SERIE_OPTIONS_CONFIG: Record<string, SerieOptionConfig> = {
+  S1: { count: 0, labels: [], required: [] },
+  S2: { count: 0, labels: [], required: [] },
+  S3: { count: 0, labels: [], required: [] },
+  S4: { count: 0, labels: [], required: [] },
+  S5: { count: 0, labels: [], required: [] },
+  S1A: { count: 0, labels: [], required: [] },
+  S2A: { count: 0, labels: [], required: [] },
+  T1: { count: 0, labels: [], required: [] },
+  T2: { count: 0, labels: [], required: [] },
+  F6: { count: 0, labels: [], required: [] },
+  LA: { count: 0, labels: [], required: [] },
+  "L-AR": { count: 0, labels: [], required: [] },
+
+  STEG: {
+    count: 1,
+    labels: ["Spécialité (projet)"],
+    required: [false],
+    mo1Options: toOpts(MO1_OPTIONS),
   },
-  {
-    id: "academic",
-    label: "Centres et matières additionnelles",
-    icon: "pi-building",
-    color: "#3b82f6",
+  STIDD: {
+    count: 1,
+    labels: ["Enseign. de spécialité"],
+    required: [false],
+    mo1Options: toOpts(MO1_OPTIONS),
   },
-];
+
+  "L'1": {
+    count: 2,
+    labels: ["LV1", "LV2"],
+    required: [false, false],
+    mo1Options: toOpts(MO1_OPTIONS),
+    mo2Options: toOpts(MO2_OPTIONS),
+  },
+  L1A: {
+    count: 2,
+    labels: ["LV1", "L.C"],
+    required: [false, false],
+    mo1Options: toOpts(MO1_OPTIONS),
+    mo2Options: toOpts(MO2_OPTIONS),
+  },
+
+  L2: {
+    count: 3,
+    labels: ["LV1", "L.V.2 ou ECONOMIE", "Sciences de la Nature (P.C ou SVT)"],
+    required: [false, false, false],
+    mo1Options: toOpts(MO1_OPTIONS),
+    mo2Options: toOpts(MO2_OPTIONS),
+    mo3Options: toOpts(MO3_OPTIONS),
+  },
+  L1B: {
+    count: 3,
+    labels: ["LV1", "LV2", "L.C"],
+    required: [false, false, false],
+    mo1Options: toOpts(MO1_OPTIONS),
+    mo2Options: toOpts(MO2_OPTIONS),
+    mo3Options: toOpts(MO3_OPTIONS),
+  },
+};
+
+const getSerieConfig = (serie?: string): SerieOptionConfig | null => {
+  if (!serie) return null;
+  if (Object.prototype.hasOwnProperty.call(SERIE_OPTIONS_CONFIG, serie)) {
+    return SERIE_OPTIONS_CONFIG[serie];
+  }
+  return {
+    count: 3,
+    labels: [
+      "Matière optionnelle 1",
+      "Matière optionnelle 2",
+      "Matière optionnelle 3",
+    ],
+    required: [false, false, false],
+    mo1Options: toOpts(MO1_OPTIONS),
+    mo2Options: toOpts(MO2_OPTIONS),
+    mo3Options: toOpts(MO3_OPTIONS),
+  };
+};
+
+// ==================== TYPES ====================
 
 interface CandidatDialogProps {
   visible: boolean;
@@ -165,7 +246,30 @@ export interface CandidatDialogRef {
   close: () => void;
 }
 
-// Composant de recherche d'établissement avec Dropdown et virtualScroller
+// ==================== FONCTION UTILITAIRE POUR CALCULER L'ÂGE ====================
+
+const calculateAge = (dateNaissance: string): number | undefined => {
+  if (!dateNaissance) return undefined;
+
+  const birthDate = new Date(dateNaissance);
+  if (isNaN(birthDate.getTime())) return undefined;
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+
+// ==================== SOUS-COMPOSANTS ====================
+
 const EtablissementDropdown = React.memo(
   ({
     value,
@@ -190,12 +294,12 @@ const EtablissementDropdown = React.memo(
         setLoading(true);
         try {
           const etablissements = await ParametrageService.getEtablissements();
-          console.log("Établissements chargés:", etablissements?.length);
-          const formattedOptions = (etablissements || []).map((e: any) => ({
-            label: e.name || e.nom,
-            value: e.id,
-          }));
-          setOptions(formattedOptions);
+          setOptions(
+            (etablissements || []).map((e: any) => ({
+              label: e.name || e.nom,
+              value: e.id,
+            })),
+          );
         } catch (error) {
           console.error("Erreur chargement établissements:", error);
         } finally {
@@ -215,26 +319,20 @@ const EtablissementDropdown = React.memo(
           placeholder={placeholder}
           showClear
           loading={loading}
-          virtualScrollerOptions={{
-            itemSize: 38,
-            showLoader: true,
-            delay: 0,
-          }}
+          virtualScrollerOptions={{ itemSize: 34, showLoader: true, delay: 0 }}
           filter
           filterBy="label"
-          filterPlaceholder="Rechercher un établissement..."
+          filterPlaceholder="Rechercher..."
           className="w-full"
-          panelStyle={{ maxHeight: "400px" }}
+          panelStyle={{ maxHeight: "350px" }}
           style={{ width: "100%" }}
         />
       </div>
     );
   },
 );
-
 EtablissementDropdown.displayName = "EtablissementDropdown";
 
-// Composant de recherche de ville avec AutoComplete
 const VilleSearch = React.memo(
   ({
     value,
@@ -255,17 +353,17 @@ const VilleSearch = React.memo(
     const [loading, setLoading] = useState(false);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-    // Chargement initial des options
     useEffect(() => {
       const loadOptions = async () => {
         setLoading(true);
         try {
           const villes = await ParametrageService.getVilles();
-          const formattedOptions = (villes || []).map((v: any) => ({
-            label: v.name || v.nom,
-            value: v.id,
-          }));
-          setAllOptions(formattedOptions);
+          setAllOptions(
+            (villes || []).map((v: any) => ({
+              label: v.name || v.nom,
+              value: v.id,
+            })),
+          );
           setFilteredOptions([]);
         } catch (error) {
           console.error("Erreur chargement villes:", error);
@@ -276,21 +374,16 @@ const VilleSearch = React.memo(
       loadOptions();
     }, []);
 
-    // Recherche avec debounce
     const searchVilles = useCallback(
       (query: string) => {
-        if (searchTimeout.current) {
-          clearTimeout(searchTimeout.current);
-        }
-
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
           if (!query || query.length < 2) {
             setFilteredOptions([]);
             return;
           }
-
-          const filtered = allOptions.filter((option) =>
-            option.label.toLowerCase().includes(query.toLowerCase()),
+          const filtered = allOptions.filter((o) =>
+            o.label.toLowerCase().includes(query.toLowerCase()),
           );
           setFilteredOptions(filtered.slice(0, 30));
         }, 300);
@@ -299,12 +392,10 @@ const VilleSearch = React.memo(
     );
 
     const handleSearch = (event: AutoCompleteCompleteEvent) => {
-      const query = event.query;
-      setSearchQuery(query);
-      searchVilles(query);
+      setSearchQuery(event.query);
+      searchVilles(event.query);
     };
 
-    // Récupérer le libellé sélectionné pour l'affichage
     const displayValue = useMemo(() => {
       if (searchQuery) return searchQuery;
       if (value) return value;
@@ -326,9 +417,7 @@ const VilleSearch = React.memo(
           onChange={(e) => {
             if (typeof e.value === "string") {
               setSearchQuery(e.value);
-              if (e.value.trim() === "") {
-                onChange("");
-              }
+              if (e.value.trim() === "") onChange("");
             } else if (
               e.value &&
               typeof e.value === "object" &&
@@ -364,7 +453,6 @@ const VilleSearch = React.memo(
     );
   },
 );
-
 VilleSearch.displayName = "VilleSearch";
 
 const ElegantDatePicker = React.memo(
@@ -383,100 +471,84 @@ const ElegantDatePicker = React.memo(
   }) => {
     const formatDate = (dateStr: string | null | undefined): string => {
       if (!dateStr || dateStr === "") return "";
-
       if (typeof dateStr === "string" && dateStr.includes("/")) {
         const parts = dateStr.split("/");
-        if (parts.length === 3) {
-          const day = parts[0].padStart(2, "0");
-          const month = parts[1].padStart(2, "0");
-          const year = parts[2];
-          return `${day}/${month}/${year}`;
-        }
+        if (parts.length === 3)
+          return `${parts[0].padStart(2, "0")}/${parts[1].padStart(2, "0")}/${
+            parts[2]
+          }`;
       }
-
       if (typeof dateStr === "string" && dateStr.includes("-")) {
         const parts = dateStr.split("-");
-        if (parts.length === 3) {
-          const year = parts[0];
-          const month = parts[1];
-          const day = parts[2];
-          return `${day}/${month}/${year}`;
-        }
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
-
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return "";
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
+      return `${String(date.getDate()).padStart(2, "0")}/${String(
+        date.getMonth() + 1,
+      ).padStart(2, "0")}/${date.getFullYear()}`;
     };
 
     const parseDate = (dateStr: string): Date | null => {
-      if (!dateStr || dateStr === "") return null;
+      if (!dateStr) return null;
       const parts = dateStr.split("/");
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-
-        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-        if (day < 1 || day > 31) return null;
-        if (month < 0 || month > 11) return null;
-        if (year < 1900 || year > 2100) return null;
-
-        const date = new Date(year, month, day);
-        if (
-          date.getDate() !== day ||
-          date.getMonth() !== month ||
-          date.getFullYear() !== year
-        ) {
-          return null;
-        }
-        return date;
-      }
-      return null;
+      if (parts.length !== 3) return null;
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+      if (
+        day < 1 ||
+        day > 31 ||
+        month < 0 ||
+        month > 11 ||
+        year < 1900 ||
+        year > 2100
+      )
+        return null;
+      const date = new Date(year, month, day);
+      if (
+        date.getDate() !== day ||
+        date.getMonth() !== month ||
+        date.getFullYear() !== year
+      )
+        return null;
+      return date;
     };
 
     const parseAnyDate = (dateStr: string): Date | null => {
-      if (!dateStr || dateStr === "") return null;
-
-      if (dateStr.includes("/")) {
-        return parseDate(dateStr);
-      }
-
+      if (!dateStr) return null;
+      if (dateStr.includes("/")) return parseDate(dateStr);
       if (dateStr.includes("-")) {
         const parts = dateStr.split("-");
         if (parts.length === 3) {
-          const year = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1;
-          const day = parseInt(parts[2], 10);
-          const date = new Date(year, month, day);
+          const date = new Date(
+            parseInt(parts[0], 10),
+            parseInt(parts[1], 10) - 1,
+            parseInt(parts[2], 10),
+          );
           return !isNaN(date.getTime()) ? date : null;
         }
       }
-
       return null;
     };
 
-    const formatToISODate = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
+    const formatToISODate = (date: Date): string =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+        2,
+        "0",
+      )}-${String(date.getDate()).padStart(2, "0")}`;
 
     const [isOpen, setIsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(
       parseAnyDate(value),
     );
-    const [currentMonth, setCurrentMonth] = useState(() => {
-      const validDate = parseAnyDate(value);
-      return validDate || new Date();
-    });
-    const [inputValue, setInputValue] = useState<string>(() => {
-      return formatDate(value);
-    });
+    const [currentMonth, setCurrentMonth] = useState(
+      () => parseAnyDate(value) || new Date(),
+    );
+    const [inputValue, setInputValue] = useState<string>(() =>
+      formatDate(value),
+    );
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -484,60 +556,45 @@ const ElegantDatePicker = React.memo(
 
     const updateExternalDate = (date: Date | null) => {
       setSelectedDate(date);
-      if (date) {
-        onChange(formatToISODate(date));
-      } else {
-        onChange("");
-      }
+      onChange(date ? formatToISODate(date) : "");
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       isTypingRef.current = true;
-      let rawValue = e.target.value;
-
-      let numbers = rawValue.replace(/[^0-9/]/g, "");
-      numbers = numbers.replace(/\/{2,}/g, "/");
-
+      let numbers = e.target.value
+        .replace(/[^0-9/]/g, "")
+        .replace(/\/{2,}/g, "/");
       let formattedValue = "";
       let parts = numbers.split("/");
-
       if (parts.length === 1) {
-        const num = parts[0];
-        if (num.length >= 2) {
-          formattedValue = `${num.slice(0, 2)}/${num.slice(2)}`;
-        } else {
-          formattedValue = num;
-        }
+        formattedValue =
+          parts[0].length >= 2
+            ? `${parts[0].slice(0, 2)}/${parts[0].slice(2)}`
+            : parts[0];
       } else if (parts.length === 2) {
         const jour = parts[0].slice(0, 2);
-        const mois = parts[1];
-        formattedValue = `${jour}/${mois}`;
-        if (mois.length >= 2) {
-          formattedValue = `${jour}/${mois.slice(0, 2)}/${mois.slice(2)}`;
-        }
-      } else if (parts.length >= 3) {
-        const jour = parts[0].slice(0, 2);
-        const mois = parts[1].slice(0, 2);
-        const annee = parts.slice(2).join("").slice(0, 4);
-        formattedValue = `${jour}/${mois}/${annee}`;
+        formattedValue =
+          parts[1].length >= 2
+            ? `${jour}/${parts[1].slice(0, 2)}/${parts[1].slice(2)}`
+            : `${jour}/${parts[1]}`;
+      } else {
+        formattedValue = `${parts[0].slice(0, 2)}/${parts[1].slice(
+          0,
+          2,
+        )}/${parts.slice(2).join("").slice(0, 4)}`;
       }
-
-      if (formattedValue.length > 10) {
+      if (formattedValue.length > 10)
         formattedValue = formattedValue.slice(0, 10);
-      }
-
       setInputValue(formattedValue);
-
       if (formattedValue.length === 10) {
         const newDate = parseDate(formattedValue);
-        if (newDate && !isNaN(newDate.getTime())) {
+        if (newDate) {
           updateExternalDate(newDate);
           setCurrentMonth(newDate);
         }
       } else if (formattedValue === "") {
         updateExternalDate(null);
       }
-
       setTimeout(() => {
         isTypingRef.current = false;
       }, 100);
@@ -563,65 +620,42 @@ const ElegantDatePicker = React.memo(
           setIsOpen(false);
           if (inputValue.length === 10) {
             const newDate = parseDate(inputValue);
-            if (newDate && !isNaN(newDate.getTime())) {
+            if (newDate) {
               updateExternalDate(newDate);
               setInputValue(formatDate(formatToISODate(newDate)));
-            } else if (selectedDate) {
+            } else if (selectedDate)
               setInputValue(formatDate(formatToISODate(selectedDate)));
-            } else {
-              setInputValue("");
-            }
+            else setInputValue("");
           } else if (selectedDate) {
             setInputValue(formatDate(formatToISODate(selectedDate)));
-          } else {
-            setInputValue("");
-          }
+          } else setInputValue("");
         }
       }, 150);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      switch (e.key) {
-        case "Enter":
-          e.preventDefault();
-          if (inputValue.length === 10) {
-            const newDate = parseDate(inputValue);
-            if (newDate && !isNaN(newDate.getTime())) {
-              updateExternalDate(newDate);
-              setCurrentMonth(newDate);
-              setIsOpen(false);
-              inputRef.current?.blur();
-            }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (inputValue.length === 10) {
+          const newDate = parseDate(inputValue);
+          if (newDate) {
+            updateExternalDate(newDate);
+            setCurrentMonth(newDate);
+            setIsOpen(false);
+            inputRef.current?.blur();
           }
-          break;
-        case "Escape":
-          e.preventDefault();
-          setIsOpen(false);
-          setInputValue(
-            selectedDate ? formatDate(formatToISODate(selectedDate)) : "",
-          );
-          break;
-        case "ArrowDown":
-          e.preventDefault();
-          if (!isOpen) {
-            setIsOpen(true);
-          }
-          break;
-        case "Tab":
-          setIsOpen(false);
-          break;
-        case "/":
-          e.preventDefault();
-          const currentValue = inputValue;
-          if (currentValue.length === 2 && !currentValue.includes("/")) {
-            setInputValue(`${currentValue}/`);
-          } else if (
-            currentValue.length === 5 &&
-            currentValue.split("/").length === 2
-          ) {
-            setInputValue(`${currentValue}/`);
-          }
-          break;
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setIsOpen(false);
+        setInputValue(
+          selectedDate ? formatDate(formatToISODate(selectedDate)) : "",
+        );
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (!isOpen) setIsOpen(true);
+      } else if (e.key === "Tab") {
+        setIsOpen(false);
       }
     };
 
@@ -633,46 +667,21 @@ const ElegantDatePicker = React.memo(
       inputRef.current?.focus();
     };
 
-    const prevMonth = () => {
-      setCurrentMonth(
-        new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
-      );
-    };
-
-    const nextMonth = () => {
-      setCurrentMonth(
-        new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
-      );
-    };
-
     const generateCalendar = () => {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
-      const firstDayOfMonth = new Date(year, month, 1);
-      const startDay = firstDayOfMonth.getDay();
+      const startDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      const calendarDays = [];
-
-      let adjustedStartDay = startDay === 0 ? 6 : startDay - 1;
-
-      for (let i = 0; i < adjustedStartDay; i++) {
-        calendarDays.push(
-          <div key={`empty-${i}`} className="calendar-day empty"></div>,
-        );
-      }
-
+      const adjustedStartDay = startDay === 0 ? 6 : startDay - 1;
+      const days = [];
+      for (let i = 0; i < adjustedStartDay; i++)
+        days.push(<div key={`e-${i}`} className="calendar-day empty" />);
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
         const isSelected =
-          selectedDate &&
-          date.getDate() === selectedDate.getDate() &&
-          date.getMonth() === selectedDate.getMonth() &&
-          date.getFullYear() === selectedDate.getFullYear();
-
+          selectedDate && date.toDateString() === selectedDate.toDateString();
         const isToday = new Date().toDateString() === date.toDateString();
-
-        calendarDays.push(
+        days.push(
           <div
             key={day}
             className={`calendar-day ${isSelected ? "selected" : ""} ${
@@ -684,22 +693,17 @@ const ElegantDatePicker = React.memo(
           </div>,
         );
       }
-
-      return calendarDays;
+      return days;
     };
-
-    const calendarDays = generateCalendar();
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (
           containerRef.current &&
           !containerRef.current.contains(event.target as Node)
-        ) {
+        )
           setIsOpen(false);
-        }
       };
-
       document.addEventListener("mousedown", handleClickOutside);
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
@@ -707,8 +711,7 @@ const ElegantDatePicker = React.memo(
 
     useEffect(() => {
       if (isOpen && inputRef.current && panelRef.current) {
-        const inputWidth = inputRef.current.offsetWidth;
-        panelRef.current.style.width = `${inputWidth}px`;
+        panelRef.current.style.width = `${inputRef.current.offsetWidth}px`;
       }
     }, [isOpen]);
 
@@ -752,24 +755,45 @@ const ElegantDatePicker = React.memo(
             onClick={() => setIsOpen(!isOpen)}
           />
         </div>
-
         {isOpen && (
           <div className="date-panel" ref={panelRef}>
             <div className="calendar-header">
-              <button type="button" onClick={prevMonth} className="nav-button">
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentMonth(
+                    new Date(
+                      currentMonth.getFullYear(),
+                      currentMonth.getMonth() - 1,
+                      1,
+                    ),
+                  )
+                }
+                className="nav-button"
+              >
                 <i className="pi pi-chevron-left" />
               </button>
               <div className="month-year">
                 {monthNames[currentMonth.getMonth()]}{" "}
                 {currentMonth.getFullYear()}
               </div>
-              <button type="button" onClick={nextMonth} className="nav-button">
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentMonth(
+                    new Date(
+                      currentMonth.getFullYear(),
+                      currentMonth.getMonth() + 1,
+                      1,
+                    ),
+                  )
+                }
+                className="nav-button"
+              >
                 <i className="pi pi-chevron-right" />
               </button>
             </div>
-
-            <div className="calendar-days">{calendarDays}</div>
-
+            <div className="calendar-days">{generateCalendar()}</div>
             <div className="calendar-footer">
               <button
                 type="button"
@@ -785,10 +809,7 @@ const ElegantDatePicker = React.memo(
               <button
                 type="button"
                 className="today-button"
-                onClick={() => {
-                  const today = new Date();
-                  handleDateSelect(today);
-                }}
+                onClick={() => handleDateSelect(new Date())}
               >
                 Aujourd'hui
               </button>
@@ -799,10 +820,8 @@ const ElegantDatePicker = React.memo(
     );
   },
 );
-
 ElegantDatePicker.displayName = "ElegantDatePicker";
 
-// Composant InputField mémorisé pour éviter les re-rendus inutiles
 const InputField = React.memo(
   ({
     label,
@@ -829,7 +848,7 @@ const InputField = React.memo(
           return (
             <ElegantDatePicker
               value={value}
-              onChange={(newValue: string) => onValueChange(field, newValue)}
+              onChange={(v: string) => onValueChange(field, v)}
               placeholder={placeholder}
               required={required}
               label=""
@@ -851,8 +870,11 @@ const InputField = React.memo(
               onChange={(e) => onValueChange(field, e.value)}
               placeholder="Sélectionner..."
               showClear
+              filter
+              filterBy="label"
+              filterPlaceholder="Rechercher..."
               virtualScrollerOptions={{
-                itemSize: 38,
+                itemSize: 34,
                 showLoader: true,
                 delay: 250,
               }}
@@ -862,7 +884,7 @@ const InputField = React.memo(
           return (
             <EtablissementDropdown
               value={value}
-              onChange={(newValue) => onValueChange(field, newValue)}
+              onChange={(v) => onValueChange(field, v)}
               placeholder={placeholder}
               required={required}
               label=""
@@ -898,7 +920,6 @@ const InputField = React.memo(
     );
   },
 );
-
 InputField.displayName = "InputField";
 
 const FormCard = React.memo(
@@ -922,7 +943,6 @@ const FormCard = React.memo(
     </div>
   ),
 );
-
 FormCard.displayName = "FormCard";
 
 const FormRow = React.memo(({ children }: { children: React.ReactNode }) => (
@@ -937,13 +957,14 @@ const FormCol = React.memo(
 );
 FormCol.displayName = "FormCol";
 
+// ==================== COMPOSANT PRINCIPAL ====================
+
 const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
   ({ visible, onHide, candidatId: externalId, onSuccess }, ref) => {
     const toast = useRef<Toast>(null);
     const { createCandidat, updateCandidat } = useCandidatStore();
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [activeSection, setActiveSection] = useState("general");
 
     const [formData, setFormData] = useState<Partial<CandidatFinis>>({
       prenoms: "",
@@ -954,6 +975,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       numeroTable: "",
       jury: "",
       serie: "",
+      numeroDossier: "",
       sexe: "",
       age: undefined,
       eps: "",
@@ -976,11 +998,21 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       handicap: "",
     });
 
+    // Calcul automatique de l'âge lorsque la date de naissance change
+    useEffect(() => {
+      if (formData.dateNaissance) {
+        const age = calculateAge(formData.dateNaissance);
+        setFormData((prev) => ({ ...prev, age }));
+      } else {
+        setFormData((prev) => ({ ...prev, age: undefined }));
+      }
+    }, [formData.dateNaissance]);
+
+    // ── Options mémorisées ─────────────────────────────────────────
     const serieOptionsMemo = useMemo(
       () => SERIE_OPTIONS.map((opt) => ({ label: opt, value: opt })),
       [],
     );
-
     const nationaliteOptionsMemo = useMemo(
       () =>
         NATIONALITE_OPTIONS.map((opt) => ({
@@ -989,32 +1021,14 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         })),
       [],
     );
-
     const ef1OptionsMemo = useMemo(
       () => EF1_OPTIONS.map((opt) => ({ label: opt, value: opt })),
       [],
     );
-
     const ef2OptionsMemo = useMemo(
       () => EF2_OPTIONS.map((opt) => ({ label: opt, value: opt })),
       [],
     );
-
-    const mo1OptionsMemo = useMemo(
-      () => MO1_OPTIONS.map((opt) => ({ label: opt, value: opt })),
-      [],
-    );
-
-    const mo2OptionsMemo = useMemo(
-      () => MO2_OPTIONS.map((opt) => ({ label: opt, value: opt })),
-      [],
-    );
-
-    const mo3OptionsMemo = useMemo(
-      () => MO3_OPTIONS.map((opt) => ({ label: opt, value: opt })),
-      [],
-    );
-
     const sexeOptionsMemo = useMemo(
       () => [
         { label: "M", value: "M" },
@@ -1022,7 +1036,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       ],
       [],
     );
-
     const typeCandidatOptionsMemo = useMemo(
       () => [
         { label: "Régulier/Officiel", value: "Officiel" },
@@ -1038,35 +1051,29 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       [],
     );
 
-    const goToPreviousSection = useCallback(() => {
-      const currentIndex = SECTIONS.findIndex(
-        (section) => section.id === activeSection,
-      );
-      if (currentIndex > 0) {
-        setActiveSection(SECTIONS[currentIndex - 1].id);
-      }
-    }, [activeSection]);
-
-    const goToNextSection = useCallback(() => {
-      const currentIndex = SECTIONS.findIndex(
-        (section) => section.id === activeSection,
-      );
-      if (currentIndex < SECTIONS.length - 1) {
-        setActiveSection(SECTIONS[currentIndex + 1].id);
-      }
-    }, [activeSection]);
+    const currentSerieConfig = useMemo(
+      () => getSerieConfig(formData.serie),
+      [formData.serie],
+    );
 
     const handleInputChange = useCallback(
       (field: keyof CandidatFinis, value: any) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev) => {
+          const next = { ...prev, [field]: value };
+          if (field === "serie") {
+            next.mo1 = "";
+            next.mo2 = "";
+            next.mo3 = "";
+          }
+          return next;
+        });
       },
       [],
     );
 
     useEffect(() => {
-      if (visible && externalId) {
-        loadCandidatData(externalId);
-      } else if (visible && !externalId) {
+      if (visible && externalId) loadCandidatData(externalId);
+      else if (visible && !externalId) {
         resetForm();
         setIsEditing(false);
       }
@@ -1077,7 +1084,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       try {
         const response = await axiosInstance.get(`/candidats/${id}`);
         const data = response.data;
-
         const getEtablissementId = (etab: any) => {
           if (!etab) return undefined;
           if (typeof etab === "string") return etab;
@@ -1085,7 +1091,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           if (etab.name) return etab.name;
           return undefined;
         };
-
         setFormData({
           ...data,
           dateNaissance: data.dateNaissance || "",
@@ -1121,6 +1126,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         numeroTable: "",
         jury: "",
         serie: "",
+        numeroDossier: "",
         sexe: "",
         age: undefined,
         eps: "",
@@ -1142,7 +1148,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         telephone: "",
         handicap: "",
       });
-      setActiveSection("general");
     };
 
     const validateForm = useCallback((): boolean => {
@@ -1162,7 +1167,6 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         { field: "jury", message: "Le jury est obligatoire" },
         { field: "serie", message: "La série est obligatoire" },
         { field: "sexe", message: "Le sexe est obligatoire" },
-        { field: "age", message: "L'âge est obligatoire" },
         { field: "eps", message: "L'EPS est obligatoire" },
         { field: "etablissement", message: "L'établissement est obligatoire" },
         { field: "centreActEPS", message: "Le centre EPS est obligatoire" },
@@ -1211,13 +1215,11 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
 
       if (formData.anneeActe) {
         const annee = parseInt(formData.anneeActe);
-        const anneeActuelle = new Date().getFullYear();
-        if (isNaN(annee) || annee < 1900 || annee > anneeActuelle) {
+        if (isNaN(annee) || annee < 1900 || annee > new Date().getFullYear()) {
           toast.current?.show({
             severity: "warn",
             summary: "Valeur invalide",
-            detail:
-              "L'année d'acte doit être valide (entre 1900 et l'année actuelle)",
+            detail: "L'année d'acte doit être valide",
             life: 3000,
           });
           return false;
@@ -1231,7 +1233,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       if (!validateForm()) return;
       setIsLoading(true);
       try {
-        const extractEtablissementId = (value: any) => {
+        const extractId = (value: any) => {
           if (!value) return undefined;
           if (typeof value === "string") return value;
           if (value.id) return value.id;
@@ -1239,24 +1241,32 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           return undefined;
         };
 
+        const formatDateForBackend = (
+          dateStr: string | undefined,
+        ): string | undefined => {
+          if (!dateStr) return undefined;
+          // Si déjà au format DD/MM/YYYY, on laisse tel quel
+          if (dateStr.includes("/")) return dateStr;
+          // Conversion de YYYY-MM-DD → DD/MM/YYYY
+          const parts = dateStr.split("-");
+          if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          return dateStr;
+        };
+
         const submitData = {
           ...formData,
-          dateNaissance: formData.dateNaissance || undefined,
-          etablissement: extractEtablissementId(formData.etablissement),
-          centreExamen: extractEtablissementId(formData.centreExamen),
-          centreActEPS: extractEtablissementId(formData.centreActEPS),
-          centreEcrit: extractEtablissementId(formData.centreEcrit),
-          centreEcritParticulier: extractEtablissementId(
-            formData.centreEcritParticulier,
-          ),
+          dateNaissance: formatDateForBackend(formData.dateNaissance),
+          etablissement: extractId(formData.etablissement),
+          centreExamen: extractId(formData.centreExamen),
+          centreActEPS: extractId(formData.centreActEPS),
+          centreEcrit: extractId(formData.centreEcrit),
+          centreEcritParticulier: extractId(formData.centreEcritParticulier),
         };
 
         let result;
-        if (isEditing && externalId) {
+        if (isEditing && externalId)
           result = await updateCandidat(externalId, submitData);
-        } else {
-          result = await createCandidat(submitData);
-        }
+        else result = await createCandidat(submitData);
 
         if (result) {
           toast.current?.show({
@@ -1308,13 +1318,12 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
     const dialogHeader = useMemo(
       () => (
         <div className="premium-header">
-          <div className="premium-header-bg" />
           <div className="premium-header-content">
             <div className="premium-header-icon">
               <i
                 className={`pi ${
                   isEditing ? "pi-pencil" : "pi-user-plus"
-                } text-white text-2xl`}
+                } text-white text-xl`}
               />
             </div>
             <div className="premium-header-text">
@@ -1341,24 +1350,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
 
     const dialogFooter = useMemo(
       () => (
-        <div className="premium-footer">
-          <div className="footer-left">
-            <Button
-              label="Précédent"
-              icon="pi pi-chevron-left"
-              onClick={goToPreviousSection}
-              disabled={activeSection === SECTIONS[0].id}
-              className="p-button-outlined p-button-secondary"
-            />
-            <Button
-              label="Suivant"
-              icon="pi pi-chevron-right"
-              iconPos="right"
-              onClick={goToNextSection}
-              disabled={activeSection === SECTIONS[SECTIONS.length - 1].id}
-              className="p-button-outlined p-button-secondary"
-            />
-          </div>
+        <div className="premium-footer single-step-footer">
           <div className="footer-right">
             <Button
               label="Annuler"
@@ -1376,15 +1368,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           </div>
         </div>
       ),
-      [
-        goToPreviousSection,
-        goToNextSection,
-        activeSection,
-        onHide,
-        handleSubmit,
-        isLoading,
-        isEditing,
-      ],
+      [onHide, handleSubmit, isLoading, isEditing],
     );
 
     if (isLoading && !isEditing) {
@@ -1396,7 +1380,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
             header={dialogHeader}
             footer={dialogFooter}
             onHide={onHide}
-            style={{ width: "90vw", maxWidth: "1200px" }}
+            style={{ width: "95vw", maxWidth: "1400px", height: "85vh" }}
             className="premium-candidat-dialog"
             modal
             closable={!isLoading}
@@ -1409,6 +1393,53 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
       );
     }
 
+    const renderMatiereOptionnelles = () => {
+      const config = currentSerieConfig;
+      if (!config || config.count === 0) {
+        if (formData.serie) {
+          return (
+            <div className="no-options-notice">
+              <i className="pi pi-info-circle" />
+              <span>
+                La série <strong>{formData.serie}</strong> ne comporte pas de
+                matières optionnelles.
+              </span>
+            </div>
+          );
+        }
+        return null;
+      }
+
+      const moFields = ["mo1", "mo2", "mo3"] as const;
+      const moOptionsList = [
+        config.mo1Options ?? [],
+        config.mo2Options ?? [],
+        config.mo3Options ?? [],
+      ];
+      const colSize = config.count === 1 ? 12 : config.count === 2 ? 6 : 4;
+
+      return (
+        <FormCard title="Matières optionnelles" icon="pi-book">
+          <FormRow>
+            {Array.from({ length: config.count }).map((_, i) => (
+              <FormCol key={moFields[i]} size={colSize}>
+                <InputField
+                  label={config.labels[i] ?? `Option ${i + 1}`}
+                  field={moFields[i]}
+                  type="dropdown"
+                  required={false}
+                  options={moOptionsList[i]}
+                  placeholder="Sélectionner (optionnel)"
+                  value={formData[moFields[i]]}
+                  onValueChange={handleInputChange}
+                />
+              </FormCol>
+            ))}
+          </FormRow>
+        </FormCard>
+      );
+    };
+
     return (
       <>
         <Toast ref={toast} />
@@ -1417,390 +1448,306 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           header={dialogHeader}
           footer={dialogFooter}
           onHide={onHide}
-          style={{ width: "90vw", maxWidth: "1200px" }}
+          style={{ width: "95vw", maxWidth: "1400px", minHeight: "98vh" }}
           className="premium-candidat-dialog"
           modal
           closable={!isLoading}
         >
-          <div className="premium-dialog-body">
-            <div className="top-tabs-container">
-              <div className="top-tabs">
-                {SECTIONS.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`top-tab ${
-                      activeSection === section.id ? "active" : ""
-                    }`}
-                    style={{
-                      borderBottomColor:
-                        activeSection === section.id
-                          ? section.color
-                          : "transparent",
-                      color:
-                        activeSection === section.id
-                          ? section.color
-                          : "#64748b",
-                    }}
-                  >
-                    <i className={`pi ${section.icon} top-tab-icon`} />
-                    <div className="top-tab-text">
-                      <span className="top-tab-label">{section.label}</span>
+          <div className="premium-dialog-body single-step-body">
+            <div className="form-scroll-area single-step-scroll">
+              {/* ══════════════ SECTION IDENTITÉ ══════════════ */}
+              <FormCard title="Identité du candidat" icon="pi-id-card">
+                <FormRow>
+                  <FormCol size={3}>
+                    <InputField
+                      label="Prénom(s)"
+                      field="prenoms"
+                      placeholder="Prénom(s)"
+                      required
+                      value={formData.prenoms}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Nom"
+                      field="nom"
+                      placeholder="Nom"
+                      required
+                      value={formData.nom}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Date naissance"
+                      field="dateNaissance"
+                      type="date"
+                      required
+                      value={formData.dateNaissance}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={3}>
+                    <InputField
+                      label="Lieu naissance"
+                      field="lieuNaissance"
+                      type="ville"
+                      placeholder="Ville..."
+                      required
+                      value={formData.lieuNaissance}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Nationalité"
+                      field="nationalite"
+                      type="dropdown"
+                      required
+                      options={nationaliteOptionsMemo}
+                      placeholder="Sélectionner..."
+                      value={formData.nationalite}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                </FormRow>
+
+                <FormRow>
+                  <FormCol size={2}>
+                    <InputField
+                      label="N° dossier"
+                      field="numeroDossier"
+                      placeholder="N° dossier"
+                      value={formData.numeroDossier}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Sexe"
+                      field="sexe"
+                      type="dropdown"
+                      required
+                      options={sexeOptionsMemo}
+                      value={formData.sexe}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Âge (auto-calculé)"
+                      field="age"
+                      type="number"
+                      required
+                      placeholder="Âge calculé automatiquement"
+                      value={formData.age}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Téléphone"
+                      field="telephone"
+                      placeholder="Numéro"
+                      value={formData.telephone}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="N° table"
+                      field="numeroTable"
+                      required
+                      placeholder="N° table"
+                      value={formData.numeroTable}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Série"
+                      field="serie"
+                      type="dropdown"
+                      options={serieOptionsMemo}
+                      required
+                      value={formData.serie}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                </FormRow>
+
+                <FormRow>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Jury"
+                      field="jury"
+                      required
+                      placeholder="Jury"
+                      value={formData.jury}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Type candidat"
+                      field="typeCandidat"
+                      type="dropdown"
+                      required
+                      options={typeCandidatOptionsMemo}
+                      value={formData.typeCandidat}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="EPS"
+                      field="eps"
+                      type="dropdown"
+                      required
+                      options={typeEpsMemo}
+                      value={formData.eps}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Code état civil"
+                      field="codeEtatCivil"
+                      placeholder="Code"
+                      required
+                      value={formData.codeEtatCivil}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Centre état civil"
+                      field="libEtatCivil"
+                      required
+                      placeholder="Centre d'état civil"
+                      value={formData.libEtatCivil}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={2}>
+                    <InputField
+                      label="Année acte"
+                      field="anneeActe"
+                      placeholder="Année"
+                      required
+                      value={formData.anneeActe}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={3}>
+                    <InputField
+                      label="Réf. acte naissance"
+                      field="refActeNaissance"
+                      placeholder="Référence"
+                      required
+                      value={formData.refActeNaissance}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={9}>
+                    <InputField
+                      label="Informations handicap"
+                      field="handicap"
+                      placeholder="Description du handicap (optionnel)"
+                      value={formData.handicap}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                </FormRow>
+              </FormCard>
+
+              {/* ══════════════ SECTION CENTRES ══════════════ */}
+              <FormCard title="Centres d'examen" icon="pi-building">
+                <FormRow>
+                  <FormCol size={6}>
+                    <InputField
+                      label="Établissement"
+                      field="etablissement"
+                      type="etablissement"
+                      required
+                      placeholder="Sélectionner..."
+                      value={formData.etablissement}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={6}>
+                    <InputField
+                      label="Centre EPS"
+                      field="centreActEPS"
+                      type="etablissement"
+                      required
+                      placeholder="Sélectionner..."
+                      value={formData.centreActEPS}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={6}>
+                    <InputField
+                      label="Centre écrit"
+                      field="centreEcrit"
+                      type="etablissement"
+                      required
+                      placeholder="Sélectionner..."
+                      value={formData.centreEcrit}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={6}>
+                    <InputField
+                      label="Centre écrit particulier"
+                      field="centreEcritParticulier"
+                      type="etablissement"
+                      placeholder="Sélectionner (optionnel)"
+                      value={formData.centreEcritParticulier}
+                      onValueChange={handleInputChange}
+                    />
+                    <div className="field-description">
+                      <i
+                        className="pi pi-info-circle"
+                        style={{ fontSize: "0.65rem", marginRight: "0.25rem" }}
+                      />
+                      Optionnel — uniquement si centre distinct
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+                  </FormCol>
+                </FormRow>
+              </FormCard>
 
-            <div className="form-scroll-area">
-              {activeSection === "general" && (
-                <>
-                  <FormCard title="Identité du candidat" icon="pi-id-card">
-                    <FormRow>
-                      <FormCol size={3}>
-                        <InputField
-                          label="Prénom(s)"
-                          field="prenoms"
-                          placeholder="Prénom(s)"
-                          required
-                          value={formData.prenoms}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Nom"
-                          field="nom"
-                          placeholder="Nom"
-                          required
-                          value={formData.nom}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Date naissance"
-                          field="dateNaissance"
-                          type="date"
-                          required
-                          value={formData.dateNaissance}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={3}>
-                        <InputField
-                          label="Lieu naissance"
-                          field="lieuNaissance"
-                          type="ville"
-                          placeholder="Rechercher une ville..."
-                          required
-                          value={formData.lieuNaissance}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Nationalité"
-                          field="nationalite"
-                          type="dropdown"
-                          required
-                          options={nationaliteOptionsMemo}
-                          placeholder="Sélectionner une nationalité"
-                          value={formData.nationalite}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
+              {/* Matières optionnelles */}
+              {renderMatiereOptionnelles()}
 
-                    <div className="py-4"></div>
-
-                    <FormRow>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Sexe"
-                          field="sexe"
-                          type="dropdown"
-                          required
-                          options={sexeOptionsMemo}
-                          value={formData.sexe}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Âge"
-                          field="age"
-                          type="number"
-                          required
-                          placeholder="Âge"
-                          value={formData.age}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Téléphone"
-                          field="telephone"
-                          placeholder="Numéro de téléphone"
-                          value={formData.telephone}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Numéro table"
-                          field="numeroTable"
-                          required
-                          placeholder="N° table"
-                          value={formData.numeroTable}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Série"
-                          field="serie"
-                          type="dropdown"
-                          options={serieOptionsMemo}
-                          required
-                          value={formData.serie}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Jury"
-                          field="jury"
-                          required
-                          placeholder="Jury"
-                          value={formData.jury}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
-
-                    <div className="py-4"></div>
-
-                    <FormRow>
-                      <FormCol size={3}>
-                        <InputField
-                          label="Type candidat"
-                          field="typeCandidat"
-                          type="dropdown"
-                          required
-                          options={typeCandidatOptionsMemo}
-                          value={formData.typeCandidat}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="EPS"
-                          field="eps"
-                          type="dropdown"
-                          required
-                          options={typeEpsMemo}
-                          value={formData.eps}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Code état civil"
-                          field="codeEtatCivil"
-                          placeholder="Code"
-                          required
-                          value={formData.codeEtatCivil}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={3}>
-                        <InputField
-                          label="Centre d'état civil"
-                          field="libEtatCivil"
-                          required
-                          placeholder="Centre d'état civil"
-                          value={formData.libEtatCivil}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={2}>
-                        <InputField
-                          label="Année acte"
-                          field="anneeActe"
-                          placeholder="Année"
-                          required
-                          value={formData.anneeActe}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
-
-                    <div className="py-4"></div>
-
-                    <FormRow>
-                      <FormCol size={3}>
-                        <InputField
-                          label="Réf. acte naissance"
-                          field="refActeNaissance"
-                          placeholder="Référence"
-                          required
-                          value={formData.refActeNaissance}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={9}>
-                        <InputField
-                          label="Informations handicap"
-                          field="handicap"
-                          placeholder="Description du handicap"
-                          value={formData.handicap}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
-                  </FormCard>
-                </>
-              )}
-
-              {activeSection === "academic" && (
-                <>
-                  <FormCard title="Centres d'examen" icon="pi-building">
-                    <FormRow>
-                      <FormCol size={6}>
-                        <InputField
-                          label="Établissement"
-                          field="etablissement"
-                          type="etablissement"
-                          required
-                          placeholder="Sélectionner un établissement..."
-                          value={formData.etablissement}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={6}>
-                        <InputField
-                          label="Centre EPS"
-                          field="centreActEPS"
-                          type="etablissement"
-                          required
-                          placeholder="Sélectionner un établissement..."
-                          value={formData.centreActEPS}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={6}>
-                        <InputField
-                          label="Centre écrit"
-                          field="centreEcrit"
-                          type="etablissement"
-                          required
-                          placeholder="Sélectionner un établissement..."
-                          value={formData.centreEcrit}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-
-                      <FormCol size={6}>
-                        <InputField
-                          label="Centre écrit particulier"
-                          field="centreEcritParticulier"
-                          type="etablissement"
-                          placeholder="Sélectionner un établissement (optionnel)"
-                          value={formData.centreEcritParticulier}
-                          onValueChange={handleInputChange}
-                        />
-                        <div
-                          className="field-description"
-                          style={{
-                            fontSize: "0.7rem",
-                            color: "#64748b",
-                            marginTop: "0.25rem",
-                          }}
-                        >
-                          <i
-                            className="pi pi-info-circle"
-                            style={{
-                              fontSize: "0.65rem",
-                              marginRight: "0.25rem",
-                            }}
-                          />
-                          Sélectionnez un établissement pour un centre d'écrit
-                          particulier
-                        </div>
-                      </FormCol>
-                    </FormRow>
-                  </FormCard>
-
-                  <FormCard title="Matières optionnelles" icon="pi-book">
-                    <FormRow>
-                      <FormCol size={4}>
-                        <InputField
-                          label="Matière optionnelle 1"
-                          field="mo1"
-                          type="dropdown"
-                          required
-                          options={mo1OptionsMemo}
-                          placeholder="Sélectionner une matière"
-                          value={formData.mo1}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={4}>
-                        <InputField
-                          label="Matière optionnelle 2"
-                          field="mo2"
-                          type="dropdown"
-                          required
-                          options={mo2OptionsMemo}
-                          placeholder="Sélectionner une matière"
-                          value={formData.mo2}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={4}>
-                        <InputField
-                          label="Matière optionnelle 3"
-                          field="mo3"
-                          type="dropdown"
-                          required
-                          options={mo3OptionsMemo}
-                          placeholder="Sélectionner une matière"
-                          value={formData.mo3}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
-                  </FormCard>
-
-                  <FormCard title="Matières facultatives" icon="pi-flag">
-                    <FormRow>
-                      <FormCol size={6}>
-                        <InputField
-                          label="EF1"
-                          field="ef1"
-                          type="dropdown"
-                          options={ef1OptionsMemo}
-                          placeholder="Sélectionner une matière"
-                          value={formData.ef1}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                      <FormCol size={6}>
-                        <InputField
-                          label="EF2"
-                          field="ef2"
-                          type="dropdown"
-                          options={ef2OptionsMemo}
-                          placeholder="Sélectionner une matière"
-                          value={formData.ef2}
-                          onValueChange={handleInputChange}
-                        />
-                      </FormCol>
-                    </FormRow>
-                  </FormCard>
-                </>
-              )}
+              {/* Matières facultatives */}
+              <FormCard title="Matières facultatives" icon="pi-flag">
+                <FormRow>
+                  <FormCol size={6}>
+                    <InputField
+                      label="EF1"
+                      field="ef1"
+                      type="dropdown"
+                      options={ef1OptionsMemo}
+                      placeholder="Sélectionner (optionnel)"
+                      value={formData.ef1}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                  <FormCol size={6}>
+                    <InputField
+                      label="EF2"
+                      field="ef2"
+                      type="dropdown"
+                      options={ef2OptionsMemo}
+                      placeholder="Sélectionner (optionnel)"
+                      value={formData.ef2}
+                      onValueChange={handleInputChange}
+                    />
+                  </FormCol>
+                </FormRow>
+              </FormCard>
             </div>
           </div>
         </Dialog>
@@ -1811,197 +1758,132 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           }
           .premium-candidat-dialog .p-dialog-content {
             padding: 0;
+            overflow: hidden;
+          }
+          .premium-candidat-dialog .p-dialog {
+            max-height: 85vh;
           }
 
           .premium-header {
             position: relative;
             overflow: hidden;
             border-radius: 12px 12px 0 0;
-            color: #000;
-          }
-          .premium-header-bg {
-            position: absolute;
-            inset: 0;
           }
           .premium-header-content {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1.5rem;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
             z-index: 1;
             color: #000;
           }
           .premium-header-icon {
-            width: 3rem;
-            height: 3rem;
+            width: 2.5rem;
+            height: 2.5rem;
             background: #000;
-            border-radius: 1rem;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(10px);
           }
           .premium-header-text {
             flex: 1;
-            color: #000;
           }
           .premium-header-title {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: white;
-            margin: 0;
             color: #000;
+            margin: 0;
           }
           .premium-header-subtitle {
-            font-size: 0.75rem;
-            color: #000;
-            margin: 0.25rem 0 0 0;
-          }
-          .premium-header-badge .p-badge {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 0.25rem 0.75rem;
+            font-size: 0.7rem;
+            color: #475569;
+            margin: 0.15rem 0 0 0;
           }
 
           .premium-footer {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             gap: 1rem;
-            padding: 1rem 1.5rem;
+            padding: 0.75rem 1rem;
             background: #f8fafc;
             border-top: 1px solid #e2e8f0;
             border-radius: 0 0 12px 12px;
           }
-
-          .footer-left {
-            display: flex;
-            gap: 0.5rem;
+          .single-step-footer {
+            justify-content: flex-end;
           }
-
           .footer-right {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
           }
-
           .premium-btn-primary {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             border: none;
-            padding: 0.625rem 1.5rem;
+            padding: 0.5rem 1.25rem;
             font-weight: 600;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: all 0.2s;
           }
           .premium-btn-primary:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
           }
 
           .premium-dialog-body {
             display: flex;
             flex-direction: column;
-            min-height: 600px;
-            max-height: 75vh;
+            height: 100%;
             background: #ffffff;
           }
-
-          .top-tabs-container {
-            width: 100%;
-            background: #ffffff;
-            border-bottom: 2px solid #f1f5f9;
-          }
-
-          .top-tabs {
-            display: flex;
-            width: 100%;
-            gap: 0;
-          }
-
-          .top-tab {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-bottom: 3px solid transparent;
-            background: transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: left;
-            font-size: 0.875rem;
-            font-weight: 500;
-          }
-
-          .top-tab:hover {
-            background: #f8fafc;
-          }
-
-          .top-tab.active {
-            background: #ffffff;
-            border-bottom-width: 3px;
-            border-bottom-style: solid;
-          }
-
-          .top-tab-icon {
-            font-size: 1.125rem;
-            transition: transform 0.2s;
-          }
-
-          .top-tab:hover .top-tab-icon {
-            transform: scale(1.1);
-          }
-
-          .top-tab-text {
-            display: flex;
-            flex-direction: column;
-          }
-
-          .top-tab-label {
-            font-size: 0.875rem;
-            font-weight: 600;
+          .single-step-body {
+            height: calc(95vh - 120px);
+            max-height: calc(95vh - 120px);
           }
 
           .form-scroll-area {
             flex: 1;
-            padding: 1.5rem;
+            padding: 1rem 1.25rem;
             overflow-y: auto;
             background: #ffffff;
+          }
+          .single-step-scroll {
+            overflow-y: auto;
           }
 
           .form-card {
             background: white;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             overflow: hidden;
           }
           .form-card-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.875rem 1.25rem;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
             background: #fafbfc;
             border-bottom: 1px solid #f1f5f9;
           }
           .form-card-icon {
-            width: 2rem;
-            height: 2rem;
+            width: 1.5rem;
+            height: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            font-size: 1rem;
+            font-size: 0.85rem;
           }
           .form-card-title {
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
             color: #1e293b;
             margin: 0;
           }
           .form-card-body {
-            padding: 1.25rem;
+            padding: 1rem;
           }
 
           .form-row {
@@ -2024,6 +1906,9 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           .col-6 {
             width: 50%;
           }
+          .col-9 {
+            width: 75%;
+          }
           .col-12 {
             width: 100%;
           }
@@ -2034,106 +1919,34 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           }
           .input-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #0a0a0a;
-            margin-bottom: 0.375rem;
+            letter-spacing: 0.4px;
+            color: #475569 !important;
+            margin-bottom: 0.25rem;
           }
           .required-star {
             color: #ef4444;
-            margin-left: 0.25rem;
+            margin-left: 0.2rem;
           }
-
           .w-full {
             width: 100%;
-          }
-
-          .p-dropdown .p-dropdown-label,
-          .p-inputnumber input,
-          .p-inputnumber .p-inputnumber-input {
-            border: none !important;
-            box-shadow: none !important;
-            background: transparent !important;
-            display: flex !important;
-            align-items: center !important;
-            line-height: 1.2 !important;
-            padding: 0.5rem 0.75rem !important;
-          }
-
-          .p-dropdown .p-dropdown-label.p-placeholder {
-            display: flex !important;
-            align-items: center !important;
-          }
-
-          .p-dropdown,
-          .p-inputnumber {
-            border: 1.5px solid #e2e8f0 !important;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            height: 40px;
-          }
-
-          .p-dropdown .p-dropdown-trigger,
-          .p-inputnumber .p-inputnumber-button {
-            border: none !important;
-            background: transparent !important;
-          }
-
-          .p-dropdown {
-            align-items: center !important;
-          }
-
-          .p-inputtext {
-            display: flex !important;
-            align-items: center !important;
-          }
-
-          .p-inputnumber {
-            align-items: center !important;
-          }
-
-          .p-inputnumber .p-inputnumber-input {
-            display: flex !important;
-            align-items: center !important;
           }
 
           .p-inputtext,
           .p-dropdown,
           .p-inputnumber {
             width: 100%;
-            height: 40px !important;
-            min-height: 40px !important;
-            padding: 0.5rem 0.75rem !important;
-            font-size: 0.875rem;
+            height: 34px !important;
+            min-height: 34px !important;
+            padding: 0.35rem 0.625rem !important;
+            font-size: 0.8rem;
             border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 7px;
             transition: all 0.2s;
             background: white;
           }
-
-          .p-dropdown .p-dropdown-trigger {
-            width: 2.5rem;
-            height: 37px !important;
-            border: none;
-          }
-
-          .p-inputnumber .p-inputnumber-button {
-            height: 37px !important;
-            border: none;
-          }
-
-          .p-inputnumber .p-inputnumber-button-group {
-            height: 37px !important;
-          }
-
-          .p-dropdown {
-            display: flex;
-            align-items: center;
-          }
-
           .p-inputtext:focus,
           .p-dropdown.p-focus,
           .p-inputnumber:focus-within {
@@ -2141,17 +1954,202 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
           }
-
-          .p-inputtext:hover,
-          .p-dropdown:hover,
-          .p-inputnumber:hover {
-            border-color: #cbd5e1;
+          .p-dropdown {
+            display: flex;
+            align-items: center !important;
+          }
+          .p-dropdown .p-dropdown-label {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0.35rem 0.625rem !important;
+            color: #1e293b !important;
+            font-size: 0.8rem !important;
+          }
+          .p-dropdown .p-dropdown-label.p-placeholder {
+            color: #94a3b8 !important;
+          }
+          .p-dropdown .p-dropdown-trigger {
+            width: 2rem;
+            height: 32px !important;
+            border: none;
+            background: transparent !important;
+          }
+          .p-inputnumber {
+            align-items: center !important;
+          }
+          .p-inputnumber input,
+          .p-inputnumber .p-inputnumber-input {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding: 0.35rem 0.625rem !important;
+            font-size: 0.8rem !important;
+          }
+          .p-dropdown-panel {
+            border-radius: 8px;
+            margin-top: 0.2rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
           }
 
-          .p-dropdown-panel {
+          .no-options-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            margin-bottom: 0.875rem;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            color: #0369a1;
+            font-size: 0.8rem;
+          }
+
+          /* Date picker compact */
+          .elegant-date-picker {
+            position: relative;
+            width: 100%;
+          }
+          .date-input-wrapper {
+            position: relative;
+            width: 100%;
+          }
+          .date-input {
+            width: 100%;
+            height: 34px;
+            padding: 0.35rem 2.25rem 0.35rem 0.625rem;
+            font-size: 0.8rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 7px;
+            transition: all 0.2s;
+            background: white;
+            font-family: inherit;
+            color: #1e293b !important;
+          }
+          .date-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+          .date-input::placeholder {
+            color: #94a3b8 !important;
+          }
+          .date-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 0.875rem;
+          }
+          .date-icon:hover {
+            color: #3b82f6;
+          }
+          .date-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: white;
             border-radius: 10px;
-            margin-top: 0.25rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            z-index: 1000;
+            overflow: hidden;
+          }
+          .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .month-year {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #1e293b;
+          }
+          .nav-button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 5px;
+            transition: all 0.2s;
+            color: #64748b;
+          }
+          .nav-button:hover {
+            background: #f1f5f9;
+            color: #3b82f6;
+          }
+          .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 0.5rem;
+            gap: 2px;
+          }
+          .calendar-day {
+            text-align: center;
+            padding: 0.35rem;
+            font-size: 0.78rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            color: #334155;
+            font-weight: 500;
+          }
+          .calendar-day:hover:not(.empty) {
+            background: #f1f5f9;
+          }
+          .calendar-day.selected {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-weight: 600;
+          }
+          .calendar-day.today {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 600;
+          }
+          .calendar-day.empty {
+            cursor: default;
+            background: transparent;
+          }
+          .calendar-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+          }
+          .clear-button,
+          .today-button {
+            padding: 0.25rem 0.625rem;
+            font-size: 0.7rem;
+            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+          }
+          .clear-button {
+            color: #ef4444;
+          }
+          .clear-button:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+          }
+          .today-button {
+            color: #3b82f6;
+          }
+          .today-button:hover {
+            background: #eff6ff;
+            border-color: #3b82f6;
           }
 
           .loading-container {
@@ -2159,199 +2157,33 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
             justify-content: center;
             align-items: center;
             padding: 3rem;
-            min-height: 400px;
+            min-height: 300px;
           }
-
-          /* Styles pour ElegantDatePicker */
-          .elegant-date-picker {
-            position: relative;
-            width: 100%;
-          }
-
-          .date-input-wrapper {
-            position: relative;
-            width: 100%;
-          }
-
-          .date-input {
-            width: 100%;
-            height: 40px;
-            padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-            font-size: 0.875rem;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
-            transition: all 0.2s;
-            background: white;
-            font-family: inherit;
-          }
-
-          .date-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-          }
-
-          .date-icon {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            cursor: pointer;
-            transition: color 0.2s;
-            font-size: 1rem;
-          }
-
-          .date-icon:hover {
-            color: #3b82f6;
-          }
-
-          .date-panel {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
-              0 8px 10px -6px rgba(0, 0, 0, 0.02);
-            border: 1px solid #e2e8f0;
-            z-index: 1000;
-            animation: slideDown 0.2s ease;
-            overflow: hidden;
+          .field-description {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 0.2rem;
           }
 
           @keyframes slideDown {
             from {
               opacity: 0;
-              transform: translateY(-10px);
+              transform: translateY(-8px);
             }
             to {
               opacity: 1;
               transform: translateY(0);
             }
           }
-
-          .calendar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, #f8fafc, #ffffff);
-            border-bottom: 1px solid #e2e8f0;
-          }
-
-          .month-year {
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: #1e293b;
-          }
-
-          .nav-button {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            transition: all 0.2s;
-            color: #64748b;
-          }
-
-          .nav-button:hover {
-            background: #f1f5f9;
-            color: #3b82f6;
-          }
-
-          .calendar-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            padding: 0.75rem;
-            gap: 4px;
-            background: white;
-          }
-
-          .calendar-day {
-            text-align: center;
-            padding: 0.5rem;
-            font-size: 0.875rem;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s;
-            color: #334155;
-            font-weight: 500;
-          }
-
-          .calendar-day:hover:not(.empty) {
-            background: #f1f5f9;
-            transform: scale(1.05);
-          }
-
-          .calendar-day.selected {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            font-weight: 600;
-            transform: scale(1);
-          }
-
-          .calendar-day.today {
-            background: #e0f2fe;
-            color: #0369a1;
-            font-weight: 600;
-            position: relative;
-          }
-
-          .calendar-day.today::after {
-            content: "";
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            background: #0369a1;
-            border-radius: 50%;
-          }
-
-          .calendar-day.empty {
-            cursor: default;
-            background: transparent;
-          }
-
-          .calendar-footer {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            border-top: 1px solid #e2e8f0;
-            background: #f8fafc;
-          }
-
-          .clear-button,
-          .today-button {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.75rem;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-          }
-
-          .clear-button {
-            color: #ef4444;
-          }
-
-          .clear-button:hover {
-            background: #fef2f2;
-            border-color: #ef4444;
-          }
-
-          .today-button {
-            color: #3b82f6;
-          }
-
-          .today-button:hover {
-            background: #eff6ff;
-            border-color: #3b82f6;
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateX(15px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
           }
 
           @media (max-width: 1024px) {
@@ -2362,87 +2194,30 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
               width: 50%;
             }
           }
-
-          .p-inputtext,
-          .p-dropdown .p-dropdown-label,
-          .p-inputnumber input,
-          .p-inputnumber .p-inputnumber-input,
-          .date-input,
-          input,
-          textarea {
-            color: #1e293b !important;
-          }
-
-          .p-inputtext::placeholder,
-          .p-dropdown .p-dropdown-label.p-placeholder,
-          .date-input::placeholder,
-          input::placeholder {
-            color: #94a3b8 !important;
-          }
-
-          .p-dropdown .p-dropdown-label {
-            color: #1e293b !important;
-          }
-
-          .date-input {
-            color: #1e293b !important;
-          }
-
-          .input-label {
-            color: #475569 !important;
-          }
-
-          .p-inputtext:disabled,
-          .p-dropdown:disabled .p-dropdown-label,
-          .date-input:disabled {
-            color: #94a3b8 !important;
-          }
-
           @media (max-width: 768px) {
             .top-tabs {
               flex-direction: column;
             }
-
             .top-tab {
               justify-content: flex-start;
-              padding: 0.75rem 1rem;
+              padding: 0.5rem 1rem;
             }
-
-            .top-tab-text .top-tab-desc {
-              display: none;
-            }
-
             .col-2,
             .col-3,
             .col-4,
             .col-6,
+            .col-9,
             .col-12 {
               width: 100%;
             }
-
             .premium-footer {
               flex-direction: column;
             }
-
             .footer-left,
             .footer-right {
               width: 100%;
               justify-content: center;
             }
-          }
-
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateX(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          .form-card {
-            animation: slideIn 0.3s ease-out;
           }
         `}</style>
       </>

@@ -25,7 +25,6 @@ public class CandidatFinis {
     private String dateNaissance;
     private String lieuNaissance;
     private String nationalite;
-
     // EXAMEN
     private String numeroTable;
     private String jury;

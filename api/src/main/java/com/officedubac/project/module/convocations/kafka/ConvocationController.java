@@ -31,7 +31,6 @@ public class ConvocationController {
 
         return ResponseEntity.ok("Convocation envoyée en génération pour : " + numeroTable);
     }
-
     // ===============================
     // 🔹 2. Générer PAR SERIE
     // ===============================
