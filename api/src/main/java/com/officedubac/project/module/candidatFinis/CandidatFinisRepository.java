@@ -1,5 +1,6 @@
 package com.officedubac.project.module.candidatFinis;
 
+import com.officedubac.project.models.CandidatToCampusen;
 import com.officedubac.project.module.convocations.kafka.NumeroTableOnly;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,5 +44,4 @@ public interface CandidatFinisRepository extends MongoRepository<CandidatFinis, 
     // Récupérer tous les centres distincts
     @Query(value = "{}", fields = "{ 'centreEcrit.code': 1 }")
     List<CentreProjection> findAllCentres();
-
 }

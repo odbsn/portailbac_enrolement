@@ -51,6 +51,8 @@ public class CandidatFinis {
     private Integer ia;
     private Integer nti;
 
+    private Long session;
+
     private Etablissement centreEcrit;
     private String codeCES;
     private String centreEcritParticulier;
