@@ -44,4 +44,6 @@ public interface CandidatFinisRepository extends MongoRepository<CandidatFinis, 
     // Récupérer tous les centres distincts
     @Query(value = "{}", fields = "{ 'centreEcrit.code': 1 }")
     List<CentreProjection> findAllCentres();
+
+    Page<CandidatFinis> findBySession(Long session, Pageable pageable);
 }
