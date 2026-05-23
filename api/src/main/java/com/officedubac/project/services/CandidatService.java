@@ -1,5 +1,7 @@
 package com.officedubac.project.services;
 
+import com.officedubac.project.module.candidatFinis.CandidatFinis;
+import com.officedubac.project.module.candidatFinis.CandidatFinisRepository;
 import org.bson.Document;
 import com.officedubac.project.dto.*;
 import com.officedubac.project.exception.ResourceAlreadyExists;
@@ -77,6 +79,8 @@ public class CandidatService
     private final AuditService auditService;
     @Autowired
     private final ImportDataService importDataService;
+    @Autowired
+    private final CandidatFinisRepository candidatFinisRepository;
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -1453,7 +1457,113 @@ public class CandidatService
     public Page<CandidatToCampusen> getCandidatsValidesPourCampusen(Long sessionId, int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
-        return candidatToCampusenRepository.findBySession(sessionId, pageable);
+        Page<CandidatFinis> candidats = candidatFinisRepository.findBySession(sessionId, pageable);
+        System.out.println("Total éléments : " + candidats.getTotalElements());
+        return candidats.map(this::convertToCampusen);
+    }
+
+    private CandidatToCampusen convertToCampusen(CandidatFinis candidat)
+    {
+        CandidatToCampusen dto = new CandidatToCampusen();
+
+        dto.setId(candidat.getId());
+
+        // SESSION
+        dto.setSession(candidat.getSession());
+
+        // TABLE / JURY
+        dto.setTableNum(
+                candidat.getNumeroTable() != null && !candidat.getNumeroTable().isEmpty()
+                        ? Integer.parseInt(candidat.getNumeroTable().trim())
+                        : 0
+        );
+
+        dto.setJury(
+                candidat.getJury() != null && !candidat.getJury().isEmpty()
+                        ? Integer.parseInt(candidat.getJury().trim())
+                        : 0
+        );
+
+        // DOSSIER
+        dto.setDosNumber(candidat.getNumeroDossier());
+
+        // IDENTITE
+        dto.setFirstname(candidat.getPrenoms());
+        dto.setLastname(candidat.getNom());
+
+        // DATE DE NAISSANCE
+        if (candidat.getDateNaissance() != null && !candidat.getDateNaissance().isEmpty())
+        {
+            try
+            {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+                dto.setDate_birth(
+                        LocalDate.parse(candidat.getDateNaissance(), formatter)
+                );
+            }
+            catch (Exception e)
+            {
+                dto.setDate_birth(null);
+            }
+        }
+
+        dto.setPlace_birth(candidat.getLieuNaissance());
+
+        // SEXE
+        dto.setGender(candidat.getSexe());
+
+        // CONTACT
+        dto.setPhone(candidat.getTelephone());
+
+        // EMAIL
+        dto.setEmail(candidat.getEmail());
+
+        // ANNEE REGISTRE
+        dto.setYear_registry_num(
+                candidat.getAnneeActe() != null && !candidat.getAnneeActe().isEmpty()
+                        ? Integer.parseInt(candidat.getAnneeActe().trim())
+                        : 0
+        );
+
+        // NUMERO REGISTRE
+        dto.setRegistry_num(candidat.getRefActeNaissance());
+
+        // HANDICAP
+        dto.setType_handicap(candidat.getHandicap());
+
+        // EPS
+        dto.setEps(candidat.getEps());
+
+        // MATIERES OPTIONNELLES
+        dto.setMatiere1(candidat.getMo1());
+        dto.setMatiere2(candidat.getMo2());
+        dto.setMatiere3(candidat.getMo3());
+
+        // EPREUVES FACULTATIVES
+        dto.setEprFacListA(candidat.getEf1());
+        dto.setEprFacListB(candidat.getEf2());
+
+        // TYPE CANDIDAT
+        dto.setTypeCandidat(candidat.getTypeCandidat());
+
+        // ETABLISSEMENT
+        dto.setEtablissement(
+                candidat.getEtablissement() != null
+                        ? candidat.getEtablissement().getName()
+                        : null
+        );
+
+        // CENTRE ETAT CIVIL
+        dto.setCentreEtatCivil(candidat.getLibEtatCivil());
+
+        // SERIE
+        dto.setSerie(candidat.getSerie());
+
+        // NATIONALITE
+        dto.setNationality(candidat.getNationalite());
+
+        return dto;
     }
 
     public List<Rejet> getRejets() {

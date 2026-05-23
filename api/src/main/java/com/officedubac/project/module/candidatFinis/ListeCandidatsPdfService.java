@@ -306,7 +306,15 @@ try {
     // ================= DATA =================
     for (CandidatFinisResponse c : candidats) {
 
-        table.addCell(cell(val(c.getCentreEcrit() != null ? c.getCentreEcrit().getCode() : "")));
+        String centreEcrit = (
+                c.getCodeCES() != null
+                        && !c.getCodeCES().trim().isEmpty()
+        )
+                ? c.getCodeCES().trim()
+                : (c.getCentreEcrit() != null
+                ? val(c.getCentreEcrit().getCode())
+                : "");
+        table.addCell(cell(centreEcrit));
         table.addCell(cell(val(c.getJury())));
         table.addCell(cell(val(c.getNumeroTable())));
         table.addCell(cell(val(c.getSerie())));
@@ -334,16 +342,19 @@ try {
 
     Set<String> centresEcrit = new TreeSet<>();
     for (CandidatFinisResponse c : candidats) {
-        if (c.getCentreEcrit() != null) {
+
+        if (c.getCodeCES() != null
+                && !c.getCodeCES().trim().isEmpty()) {
+
+            centresEcrit.add(c.getCodeCES().trim());
+        } else if (c.getCentreEcrit() != null) {
             String code = c.getCentreEcrit().getCode();
             String name = c.getCentreEcrit().getName();
 
-            if (code != null && !code.isEmpty()) {
-                if (name != null && !name.isEmpty()) {
-                    centresEcrit.add(code + " : " + name);
-                } else {
-                    centresEcrit.add(code);
-                }
+            if (code != null && !code.isEmpty() && name != null && !name.isEmpty()) {
+                centresEcrit.add(code + " : " + name);
+            } else if (code != null && !code.isEmpty()) {
+                centresEcrit.add(code);
             } else if (name != null && !name.isEmpty()) {
                 centresEcrit.add(name);
             }
