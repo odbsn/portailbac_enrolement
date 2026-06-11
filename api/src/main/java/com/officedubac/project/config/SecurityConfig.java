@@ -110,6 +110,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/convocationMassive/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/convocations/batch/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/epreuves/**").permitAll()
+                                .requestMatchers("/api/v1/nouveauBacheliers/resultat/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

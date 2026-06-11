@@ -116,10 +116,8 @@ public class NouveauBachelierResource {
     @GetMapping("/resultat/{numeroTable}")
     public ResponseEntity<NouveauBachelierResponse> getResultatByNumeroTable(@PathVariable String numeroTable) {
         log.info("Recherche du résultat pour le numéro table: {}", numeroTable);
-
         try {
             Optional<NouveauBachelierResponse> optional = service.getBachelierByNumeroTable(numeroTable);
-
             if (optional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
