@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useSafeNavigation } from "@/app/(full-page)/hooks/useSafeNavigation";
 import Marquee from "react-fast-marquee";
 import { useCandidatStore } from "@/app/(main)/convocations/candidatStore";
+import { NouveauBachelierResponse, useNouveauBachelierStore } from "@/app/(main)/convocations/nouveauBachelierStore";
 
 interface CandidatInfo {
   prenoms?: string;
@@ -132,6 +133,9 @@ export default function EspaceCandidat() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const toastRef = useRef<Toast>(null);
+  const [resultatBac, setResultatBac] = useState<NouveauBachelierResponse | null>(null);
+const [isLoadingResultat, setIsLoadingResultat] = useState(false);
+const { searchByNumeroTable } = useNouveauBachelierStore();
 
   const {
     currentCandidat,
@@ -184,6 +188,24 @@ export default function EspaceCandidat() {
       clearError();
     };
   }, [router, safeNavigate]);
+
+  useEffect(() => {
+  const fetchResultat = async () => {
+    if (candidatInfo?.numeroTable) {
+      setIsLoadingResultat(true);
+      try {
+        const result = await searchByNumeroTable(candidatInfo.numeroTable);
+        setResultatBac(result);
+      } catch (error) {
+        console.error("Erreur lors de la récupération du résultat:", error);
+      } finally {
+        setIsLoadingResultat(false);
+      }
+    }
+  };
+  
+  fetchResultat();
+}, [candidatInfo?.numeroTable, searchByNumeroTable]);
 
   const handleLogout = () => {
     localStorage.removeItem("candidat_info");
@@ -493,17 +515,51 @@ export default function EspaceCandidat() {
                 </div>
               </TabPanel>
 
-              <TabPanel
-                header="Mon résultat au Bac"
-                leftIcon="pi pi-chart-line mr-2"
-              >
+              <TabPanel header="Mon résultat au Bac" leftIcon="pi pi-chart-line mr-2">
                 <div className="p-2 md:p-4">
-                  <div className="text-center p-4">
-                    <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
-                    <p className="text-600">
-                      Les résultats seront disponibles prochainement.
-                    </p>
-                  </div>
+                  {isLoadingResultat ? (
+                    <div className="flex justify-content-center align-items-center p-4">
+                      <ProgressSpinner />
+                    </div>
+                  ) : resultatBac ? (
+                    <div className="resultat-container">
+                      <div className="resultat-card text-center">
+                        <div className="resultat-icon">
+                          {resultatBac.resultat?.toLowerCase().includes("admis") ? (
+                            <i className="pi pi-check-circle text-5xl text-green-500" />
+                          ) : resultatBac.resultat?.toLowerCase().includes("ajourn") ? (
+                            <i className="pi pi-times-circle text-5xl text-red-500" />
+                          ) : resultatBac.resultat?.toLowerCase().includes("autoris") ? (
+                            <i className="pi pi-clock text-5xl text-orange-500" />
+                          ) : (
+                            <i className="pi pi-question-circle text-5xl text-gray-500" />
+                          )}
+                        </div>
+                        
+                        <div className="resultat-text mt-3">
+                          <h2 className="text-2xl font-bold mb-2">Votre résultat</h2>
+                          <div className={`resultat-badge p-4 border-round-lg ${
+                            resultatBac.resultat?.toLowerCase().includes("admis") ? "bg-green-50 text-green-700" :
+                            resultatBac.resultat?.toLowerCase().includes("ajourn") ? "bg-red-50 text-red-700" :
+                            resultatBac.resultat?.toLowerCase().includes("autoris") ? "bg-orange-50 text-orange-700" :
+                            "bg-gray-50 text-gray-700"
+                          }`}>
+                            <p className="text-xl font-semibold m-0">{resultatBac.resultat}</p>
+                            {resultatBac.mention && (
+                              <p className="text-md mt-2 m-0">Mention: {resultatBac.mention}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-4">
+                      <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
+                      <p className="text-600">
+                        Les résultats seront disponibles prochainement.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </TabPanel>
             </TabView>
@@ -621,6 +677,25 @@ export default function EspaceCandidat() {
           background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
           color: white;
         }
+          /* Styles pour le résultat */
+          .resultat-card {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 1rem;
+          }
+
+          .resultat-icon {
+            margin-bottom: 1rem;
+          }
+
+          .resultat-badge {
+            border: 1px solid;
+            border-color: inherit;
+          }
+
+          .resultat-badge p {
+            word-break: break-word;
+          }
 
         @media (max-width: 900px) {
           .three-blocks-container {

@@ -1,5 +1,6 @@
 package com.officedubac.project.module.nouveauBachelier.v1;
 
+import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.module.nouveauBachelier.NouveauBachelierService;
 import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/demandebac/v1/nouveauBacheliers")
+@RequestMapping("/api/v1/nouveauBacheliers")
 @RequiredArgsConstructor
 @Slf4j
 public class NouveauBachelierResource {
@@ -110,6 +111,23 @@ public class NouveauBachelierResource {
             return ResponseEntity.ok(logs);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body(List.of("❌ Erreur lors de l'import : " + e.getMessage()));
+        }
+    }
+    @GetMapping("/resultat/{numeroTable}")
+    public ResponseEntity<NouveauBachelierResponse> getResultatByNumeroTable(@PathVariable String numeroTable) {
+        log.info("Recherche du résultat pour le numéro table: {}", numeroTable);
+
+        try {
+            Optional<NouveauBachelierResponse> optional = service.getBachelierByNumeroTable(numeroTable);
+
+            if (optional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            return ResponseEntity.ok(optional.get());
+
+        } catch (BusinessResourceException e) {
+            log.error("Erreur lors de la recherche: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

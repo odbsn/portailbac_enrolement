@@ -1,5 +1,6 @@
 package com.officedubac.project.module.nouveauBachelier.dto;
 
+import com.officedubac.project.models.Jury;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,7 @@ public class NouveauBachelierResponse {
     private String numeroTable;
     private String resultat;
     private String mention;
+    private Jury jury;
     private Long utiCree;
     @CreatedDate
     private LocalDateTime dateCreation;
