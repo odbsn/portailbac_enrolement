@@ -1091,6 +1091,13 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           if (etab.name) return etab.name;
           return undefined;
         };
+        const getEtablissementCentreParticulierId = (etab: any) => {
+          if (!etab) return undefined;
+          if (typeof etab === "string") return etab;
+          /*  if (etab.id) return etab.id; */
+          if (etab.name) return etab.name;
+          return undefined;
+        };
         setFormData({
           ...data,
           dateNaissance: data.dateNaissance || "",
@@ -1098,7 +1105,7 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           centreActEPS: getEtablissementId(data.centreActEPS),
           centreEcrit: getEtablissementId(data.centreEcrit),
           centreExamen: getEtablissementId(data.centreExamen),
-          centreEcritParticulier: getEtablissementId(
+          centreEcritParticulier: getEtablissementCentreParticulierId(
             data.centreEcritParticulier,
           ),
         });
@@ -1236,8 +1243,8 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
         const extractId = (value: any) => {
           if (!value) return undefined;
           if (typeof value === "string") return value;
-          if (value.id) return value.id;
           if (value.name) return value.name;
+          /* if (value.id) return value.id; */
           return undefined;
         };
 
