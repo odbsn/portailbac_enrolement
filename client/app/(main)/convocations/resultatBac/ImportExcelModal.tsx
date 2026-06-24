@@ -100,7 +100,7 @@ export default function ImportExcelModal({ open, onClose, onSuccess }: Props) {
 
   // Store actions
   const importExcel = useNouveauBachelierStore((state) => state.importExcel);
-  const fetchAll = useNouveauBachelierStore((state) => state.fetchAll);
+  const fetchAll = useNouveauBachelierStore((state) => state.fetchPage);
 
   // ── drag & drop ──
   const handleDrop = useCallback((e: React.DragEvent) => {

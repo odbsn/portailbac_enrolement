@@ -14,4 +14,5 @@ public class BulkImportRow {
     private String mention;
     private String juryCode;
     private int rowNum;
+    private String fichierSource; // 🆕 nom du fichier d'origine, pour répartir les résultats par fichier après un batch fusionné
 }
