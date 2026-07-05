@@ -32,14 +32,18 @@ export default function JurysNonChargesPanel() {
   }, [activeTab]);
 
   // ── Filtre côté client sur numéro et nom du jury ──────────────────────────
-  const filteredJurys = useMemo(() => {
-    if (!searchTerm.trim()) return jurysNonCharges;
-    const term = searchTerm.toLowerCase();
-    return jurysNonCharges.filter(j =>
-      j.numero?.toLowerCase().includes(term) ||
-      j.name?.toLowerCase().includes(term)
-    );
-  }, [jurysNonCharges, searchTerm]);
+  // ── Filtre côté client sur numéro, nom du jury, centre, ville, académie ──
+const filteredJurys = useMemo(() => {
+  if (!searchTerm.trim()) return jurysNonCharges;
+  const term = searchTerm.toLowerCase();
+  return jurysNonCharges.filter(j =>
+    j.numero?.toLowerCase().includes(term) ||
+    j.name?.toLowerCase().includes(term) ||
+    j.centre?.name?.toLowerCase().includes(term) ||
+    j.centre?.ville?.name?.toLowerCase().includes(term) ||
+    j.centre?.ville?.inspectionAcademie?.name?.toLowerCase().includes(term)
+  );
+}, [jurysNonCharges, searchTerm]);
 
   // ── Pagination côté client : on découpe la liste filtrée ─────────────────
   const totalElements = filteredJurys.length;
@@ -133,13 +137,21 @@ export default function JurysNonChargesPanel() {
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                 <th style={thStyle}>N° Jury</th>
                 <th style={thStyle}>Nom</th>
+                <th style={thStyle}>Centre</th>
+                <th style={thStyle}>Ville</th>
+                <th style={thStyle}>Académie</th>
               </tr>
             </thead>
             <tbody>
               {paginatedJurys.map(j => (
                 <tr key={j.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                  <td style={tdStyle}><span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{j.numero || '—'}</span></td>
+                  <td style={tdStyle}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{j.numero || '—'}</span>
+                  </td>
                   <td style={tdStyle}>{j.name || '—'}</td>
+                  <td style={tdStyle}>{j.centre?.name || '—'}</td>
+                  <td style={tdStyle}>{j.centre?.ville?.name || '—'}</td>
+                  <td style={tdStyle}>{j.centre?.ville?.inspectionAcademie?.name || '—'}</td>
                 </tr>
               ))}
             </tbody>

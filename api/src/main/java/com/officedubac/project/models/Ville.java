@@ -21,4 +21,5 @@ public class Ville
     private String id;
     private String name;
     private Departement departement;
+    private InspectionAcademie inspectionAcademie;
 }

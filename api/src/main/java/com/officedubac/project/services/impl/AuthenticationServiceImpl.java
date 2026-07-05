@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -220,6 +221,33 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return userRepository.findByLogin(login).orElse(null);
         }
         return null;
+    }
+    @Override
+    public int resetAllPasswords(String defaultPassword) {
+        logger.warn("⚠️ DÉBUT réinitialisation MASSIVE des mots de passe — opération sensible");
+
+        if (defaultPassword == null || defaultPassword.isBlank()) {
+            throw new IllegalArgumentException("Le mot de passe par défaut ne peut pas être vide");
+        }
+
+        List<User> allUsers = userRepository.findAll();
+
+        if (allUsers.isEmpty()) {
+            logger.warn("Aucun utilisateur trouvé, rien à réinitialiser");
+            return 0;
+        }
+
+        String encodedPassword = passwordEncoder.encode(defaultPassword);
+
+        for (User user : allUsers) {
+            user.setPassword(encodedPassword);
+        }
+
+        userRepository.saveAll(allUsers);
+
+        logger.warn("✅ Réinitialisation terminée : {} mot(s) de passe réinitialisé(s)", allUsers.size());
+
+        return allUsers.size();
     }
 
 }

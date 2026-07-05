@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,16 @@ public class AuthController
         }
 
         return ResponseEntity.ok(updated);
+    }
+    @PostMapping("/admin/reset-all-passwords")
+    public ResponseEntity<Map<String, Object>> resetAllPasswords() {
+        int count = authenticationService.resetAllPasswords("passer123");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Réinitialisation effectuée avec succès");
+        response.put("nombreUtilisateurs", count);
+
+        return ResponseEntity.ok(response);
     }
 
 }

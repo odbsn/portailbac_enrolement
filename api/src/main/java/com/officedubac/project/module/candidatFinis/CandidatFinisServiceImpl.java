@@ -14,6 +14,7 @@ import com.officedubac.project.module.epreuve.Epreuve;
 import com.officedubac.project.module.epreuve.EpreuveMapper;
 import com.officedubac.project.module.epreuve.dto.EpreuveResponse;
 import com.officedubac.project.module.jour.Jour;
+import com.officedubac.project.module.nouveauBachelier.NouveauBachelier;
 import com.officedubac.project.repository.EtablissementRepository;
 import com.officedubac.project.services.AuthenticationService;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -470,6 +472,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
         Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
         Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
+        enrichWithResultats(responsePage.getContent());
 
         return toPageResponse(responsePage);
     }
@@ -579,7 +582,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
         Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
         Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
-
+        enrichWithResultats(responsePage.getContent());
         return toPageResponse(responsePage);
     }
 
@@ -645,7 +648,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         log.info("📊 {} candidats trouvés pour l'export (triés par série, nom, prénoms)", candidats.size());
 
         List<CandidatFinisResponse> responses = toResponsesWithEpreuves(candidats);
-
+        enrichWithResultats(responses);
         return candidatExportService.generateCandidatsExcel(responses);
     }
     @Override
@@ -687,13 +690,18 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         // ⚡ OPTIMISATION (important)
         List<EpreuveResponse> epreuves = getEpreuvesBySerieOrdered(serie);
 
-        return candidats.stream()
+        List<CandidatFinisResponse> responses = candidats.stream()
                 .map(candidat -> {
                     CandidatFinisResponse response = candidatFinisMapper.toResponse(candidat);
                     response.setEpreuves(epreuves);
                     return response;
                 })
                 .toList();
+
+        // ===== AJOUT : enrichissement avec les résultats =====
+        enrichWithResultats(responses);
+
+        return responses;
     }
     @Override
     public List<CandidatFinisResponse> getAllByUtilisateurConnecte() {
@@ -704,7 +712,6 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         Query query = new Query();
 
-        // ✅ Conversion en ObjectId
         ObjectId objectId;
         try {
             objectId = new ObjectId(etablissement.getId());
@@ -713,18 +720,81 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             return List.of();
         }
 
-        // ✅ BON champ Mongo
         query.addCriteria(Criteria.where("etablissement._id").is(objectId));
-
 
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
 
         log.info("✅ {} candidats récupérés", candidats.size());
 
-
-        return candidats.stream()
+        List<CandidatFinisResponse> responses = candidats.stream()
                 .map(candidatFinisMapper::toResponse)
                 .toList();
+
+        // ===== ENRICHISSEMENT DES RÉSULTATS (1 SEULE REQUÊTE, PAS DE N+1) =====
+        enrichWithResultats(responses);
+
+        return responses;
+    }
+
+    /**
+     * Enrichit en masse les réponses avec resultat/mention issus de NouveauBachelier.
+     * ⚡ Performance : une seule requête MongoDB avec $in, quel que soit le nombre de candidats.
+     */
+    private void enrichWithResultats(List<CandidatFinisResponse> responses) {
+        if (responses.isEmpty()) {
+            return;
+        }
+        // 1. Récupérer les numeroTable uniques et nettoyés
+        List<String> numerosTable = responses.stream()
+                .map(CandidatFinisResponse::getNumeroTable)
+                .filter(StringUtils::hasText)
+                .map(nt -> nt.trim().replaceAll("\\s+", ""))
+                .distinct()
+                .toList();
+
+        if (numerosTable.isEmpty()) {
+            return;
+        }
+        // 2. Une seule requête avec $in + projection (limite les champs transférés)
+        Query query = Query.query(Criteria.where("numeroTable").in(numerosTable));
+        query.fields()
+                .include("numeroTable")
+                .include("resultat")
+                .include("mention");
+
+        List<NouveauBachelier> bacheliers = mongoTemplate.find(query, NouveauBachelier.class);
+
+        log.info("📊 {} résultats trouvés sur {} candidats", bacheliers.size(), numerosTable.size());
+
+        // 3. Map pour lookup O(1)
+        Map<String, NouveauBachelier> bachelierByNumeroTable = bacheliers.stream()
+                .collect(Collectors.toMap(
+                        b -> b.getNumeroTable().trim().replaceAll("\\s+", ""),
+                        b -> b,
+                        (existing, duplicate) -> existing // sécurité anti-doublon
+                ));
+
+        // 4. Enrichissement en mémoire, sans requête supplémentaire
+        for (CandidatFinisResponse response : responses) {
+            if (!StringUtils.hasText(response.getNumeroTable())) {
+                continue;
+            }
+
+            String cleaned = response.getNumeroTable().trim().replaceAll("\\s+", "");
+            NouveauBachelier bachelier = bachelierByNumeroTable.get(cleaned);
+
+            if (bachelier == null) {
+                // Résultat non encore disponible pour ce candidat
+                continue;
+            }
+
+            String resultat = bachelier.getResultat();
+            response.setResultat(resultat);
+
+            // Même règle métier que getBachelierByNumeroTable : mention seulement si Admis(e)
+            boolean admis = resultat != null && (resultat.contains("Admis") || resultat.contains("ADMIS"));
+            response.setMention(admis ? bachelier.getMention() : null);
+        }
     }
     @Override
     public Jour getJourEPS() {

@@ -98,6 +98,9 @@ public class CandidatExportService {
         // Matière(s) Facultatives
         dto.setMatieresFacultatives(getMatieresFacultatives(c));
 
+        dto.setResultat(c.getResultat());
+        dto.setMention(c.getMention());
+
         return dto;
     }
 

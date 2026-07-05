@@ -21,4 +21,5 @@ public interface AuthenticationService {
     JwtAuthenticationResponse refreshToken(RefreshTokenDTO refreshTokenDTO) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException;
 
     User getCurrentUser() throws BusinessResourceException;
+    public int resetAllPasswords(String defaultPassword);
 }

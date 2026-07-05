@@ -549,6 +549,36 @@ export default function CandidatsTabTable({
         return rowData.eps;
     }
   };
+  const resultatTemplate = (rowData: CandidatFinis) => {
+  if (!rowData.resultat) {
+    return <span className="text-500 italic">En attente</span>;
+  }
+
+  const resultat = rowData.resultat.toUpperCase();
+
+  if (resultat.includes("ADMIS")) {
+    return (
+      <span className="text-green-700 font-semibold bg-green-100 px-2 py-1 border-round">
+        {rowData.resultat}
+      </span>
+    );
+  }
+
+  if (resultat.includes("REFUS") || resultat.includes("AJOURN")) {
+    return (
+      <span className="text-red-700 font-semibold bg-red-100 px-2 py-1 border-round">
+        {rowData.resultat}
+      </span>
+    );
+  }
+
+  return <span>{rowData.resultat}</span>;
+};
+
+const mentionTemplate = (rowData: CandidatFinis) => {
+  if (!rowData.mention) return "-";
+  return <span className="font-medium text-primary">{rowData.mention}</span>;
+};
   const handleExportPdfBySerie = async (serieCode: string) => {
     if (!serieCode) {
       toast.current?.show({
@@ -1214,6 +1244,18 @@ export default function CandidatsTabTable({
               header="N° Table"
               style={{ maxWidth: "5rem" }}
             />
+            <Column
+              field="resultat"
+              header="Résultat"
+              body={resultatTemplate}
+              style={{ maxWidth: "20rem" }}
+            />
+            <Column
+              field="mention"
+              header="Mention"
+              body={mentionTemplate}
+              style={{ maxWidth: "6rem" }}
+            />
             <Column field="serie" header="Série" style={{ maxWidth: "3rem" }} />
             <Column
               header="Mat. opt."
@@ -1250,11 +1292,11 @@ export default function CandidatsTabTable({
                 whiteSpace: "normal",
               }}
             />
-            <Column
+            {/* <Column
               field="nationalite"
               header="Nationalité"
               style={{ maxWidth: "6rem" }}
-            />
+            /> */}
             <Column
               field="eps"
               header="EPS"

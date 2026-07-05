@@ -4,11 +4,31 @@ import { devtools } from 'zustand/middleware';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface Academie {
+  id?: string;
+  name?: string;
+  code?: string;
+}
+
+export interface Ville {
+  id?: string;
+  name?: string;
+  inspectionAcademie?: Academie;
+}
+
+export interface Centre {
+  id?: string;
+  code?: string;
+  name?: string;
+  ville?: Ville;
+}
+
 export interface Jury {
   id: string;
   numero?: string;
   name?: string;
   technique?: boolean;
+  centre?: Centre;
 }
 
 export interface NouveauBachelierResponse {
