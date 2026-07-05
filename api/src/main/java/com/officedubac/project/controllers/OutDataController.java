@@ -40,7 +40,6 @@ public class OutDataController
         res.put("totalPages", p.getTotalPages());
         res.put("size", p.getSize());
         res.put("page", p.getNumber());
-
         return ResponseEntity.ok(res);
     }
 

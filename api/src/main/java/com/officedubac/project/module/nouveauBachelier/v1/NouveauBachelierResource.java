@@ -1,6 +1,7 @@
 package com.officedubac.project.module.nouveauBachelier.v1;
 
 import com.officedubac.project.exception.BusinessResourceException;
+import com.officedubac.project.models.Jury;
 import com.officedubac.project.module.nouveauBachelier.NouveauBachelierService;
 import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
@@ -8,6 +9,10 @@ import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRespo
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -98,6 +103,14 @@ public class NouveauBachelierResource {
         log.info(result.toSummary());
         return ResponseEntity.ok(result);
     }
+    @PostMapping("/import/excel/multiple")
+    public ResponseEntity<List<ImportResult>> importerExcelMultiple(
+            @RequestParam("files") List<MultipartFile> files) throws IOException {
+        log.info("Réception de {} fichier(s) Excel à importer", files.size());
+        List<ImportResult> results = service.importerDepuisExcelMultiple(files);
+        results.forEach(r -> log.info(r.toSummary()));
+        return ResponseEntity.ok(results);
+    }
     @PostMapping("/csv")
     public ResponseEntity<List<String>> uploadCsv(@RequestParam("file") MultipartFile file) {
         List<String> logs;
@@ -127,6 +140,33 @@ public class NouveauBachelierResource {
             log.error("Erreur lors de la recherche: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+    // ✅ NOUVEAU : pagination serveur — GET /api/v1/nouveauBacheliers?page=0&size=10&search=...&sortBy=dateCreation&sortDir=desc
+    @GetMapping
+    public ResponseEntity<Page<NouveauBachelierResponse>> findAllPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "dateCreation") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        log.info("Requête paginée: page={}, size={}, search='{}', sortBy={}, sortDir={}",
+                page, size, search, sortBy, sortDir);
+
+        Page<NouveauBachelierResponse> response = service.findAllPaginated(pageable, search);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // ✅ NOUVEAU : jurys n'ayant encore aucun bachelier chargé
+    @GetMapping("/jurys-non-charges")
+    public ResponseEntity<List<Jury>> jurysNonCharges(
+            @RequestParam(required = false) Boolean technique
+    ) {
+        List<Jury> response = service.findJurysNonCharges(technique);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
 

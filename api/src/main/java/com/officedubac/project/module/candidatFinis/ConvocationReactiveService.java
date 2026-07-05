@@ -31,8 +31,40 @@ public class ConvocationReactiveService {
         return String.format("conv:%s:%s:%s", code, num, date);
     }
 
+//    public Mono<ConvocationDTO> findConvocation(String codeEtab, String numeroTable, String dateNaissance) {
+//        String cacheKey = buildCacheKey(codeEtab, numeroTable, dateNaissance);
+//
+//        return redisTemplate.opsForValue().get(cacheKey)
+//                .doOnSuccess(dto -> {
+//                    if (dto != null) {
+//                        log.debug("✅ Cache HIT - Key: {}", cacheKey);
+//                    } else {
+//                        log.debug("❌ Cache MISS - Key: {}", cacheKey);
+//                    }
+//                })
+//                .switchIfEmpty(Mono.defer(() ->
+//                        repository.findByNumeroTableAndDateNaissanceAndEtablissement_Code(
+//                                        numeroTable, dateNaissance, codeEtab)
+//                                .subscribeOn(Schedulers.boundedElastic())
+//                                .switchIfEmpty(Mono.error(new RuntimeException("Candidat non trouvé")))
+//                                .map(this::mapToDTO)
+//                                .flatMap(dto ->
+//                                        redisTemplate.opsForValue()
+//                                                .set(cacheKey, dto, CACHE_TTL)
+//                                                .doOnSuccess(success -> log.info("💾 Cached convocation for key: {}", cacheKey))
+//                                                .thenReturn(dto)
+//                                )
+//                ))
+//                .timeout(Duration.ofSeconds(5))
+//                .onErrorResume(error -> {
+//                    log.error("Error fetching convocation: {}", error.getMessage());
+//                    return Mono.error(new RuntimeException("Service temporairement indisponible"));
+//                });
+//    }
+
     public Mono<ConvocationDTO> findConvocation(String codeEtab, String numeroTable, String dateNaissance) {
-        String cacheKey = buildCacheKey(codeEtab, numeroTable, dateNaissance);
+        String codeEtabNormalise = codeEtab.trim().replaceAll("\\s+", "").toUpperCase();
+        String cacheKey = buildCacheKey(codeEtabNormalise, numeroTable, dateNaissance);
 
         return redisTemplate.opsForValue().get(cacheKey)
                 .doOnSuccess(dto -> {
@@ -43,8 +75,8 @@ public class ConvocationReactiveService {
                     }
                 })
                 .switchIfEmpty(Mono.defer(() ->
-                        repository.findByNumeroTableAndDateNaissanceAndEtablissement_Code(
-                                        numeroTable, dateNaissance, codeEtab)
+                        repository.findByNumeroTableAndDateNaissanceAndEtablissementCodeNormalise(
+                                        numeroTable, dateNaissance, codeEtabNormalise)
                                 .subscribeOn(Schedulers.boundedElastic())
                                 .switchIfEmpty(Mono.error(new RuntimeException("Candidat non trouvé")))
                                 .map(this::mapToDTO)

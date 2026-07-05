@@ -1,19 +1,18 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react'; // ← Ajouter useEffect
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
   useReactTable,
-  SortingState,
 } from '@tanstack/react-table';
 import { useShallow } from 'zustand/react/shallow';
 import { NouveauBachelierResponse, useNouveauBachelierStore } from '../nouveauBachelierStore';
 import ImportExcelModal from './ImportExcelModal';
+import JurysNonChargesPanel from './Jurysnonchargespanel';
+import ImportExcelMultipleModal from './Importexcelmultiplemodal';
+import ImportZipModal from './Importzipmodal';
 
 // ─── Composants UI ───────────────────────────────────────────────────────────
 
@@ -25,7 +24,7 @@ function StatusBadge({ resultat }: { resultat: string }) {
     ABSENT: { bg: '#f3f4f6', text: '#4b5563', label: '⏳ Absent' },
   };
   const style = styles[resultat] || { bg: '#f3f4f6', text: '#4b5563', label: resultat };
-  
+
   return (
     <span style={{
       background: style.bg,
@@ -54,18 +53,76 @@ function LoadingSpinner() {
   );
 }
 
-// ─── Composant principal ─────────────────────────────────────────────────────
+// ─── Onglets de premier niveau ────────────────────────────────────────────────
+
+type MainTabKey = 'bacheliers' | 'jurysNonCharges';
 
 export default function BacheliersPage() {
+  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>('bacheliers');
+
+  return (
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+      {/* Onglets principaux */}
+      <div style={{
+        display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb',
+        padding: '0 24px', marginTop: 24
+      }}>
+        <MainTabButton
+          active={activeMainTab === 'bacheliers'}
+          onClick={() => setActiveMainTab('bacheliers')}
+          label="📚 Bacheliers"
+        />
+        <MainTabButton
+          active={activeMainTab === 'jurysNonCharges'}
+          onClick={() => setActiveMainTab('jurysNonCharges')}
+          label="📋 Jurys non chargés"
+        />
+      </div>
+
+      {activeMainTab === 'bacheliers' ? <BacheliersTable /> : <JurysNonChargesPanel />}
+    </div>
+  );
+}
+
+function MainTabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '12px 20px',
+        fontSize: 14,
+        fontWeight: 600,
+        background: 'none',
+        border: 'none',
+        borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
+        color: active ? '#2563eb' : '#6b7280',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ─── Composant Bacheliers (anciennement BacheliersPage) ──────────────────────
+
+function BacheliersTable() {
   const {
     bacheliers,
     isLoading,
     isSubmitting,
     error,
     searchTerm,
-    fetchAll,
+    currentPage,
+    pageSize,
+    totalElements,
+    totalPages,
+    fetchPage,
     delete: deleteBachelier,
     setSearchTerm,
+    setCurrentPage,
+    setPageSize,
     clearError,
   } = useNouveauBachelierStore(
     useShallow((state) => ({
@@ -74,23 +131,45 @@ export default function BacheliersPage() {
       isSubmitting: state.isSubmitting,
       error: state.error,
       searchTerm: state.searchTerm,
-      fetchAll: state.fetchAll,
+      currentPage: state.currentPage,
+      pageSize: state.pageSize,
+      totalElements: state.totalElements,
+      totalPages: state.totalPages,
+      fetchPage: state.fetchPage,
       delete: state.delete,
       setSearchTerm: state.setSearchTerm,
+      setCurrentPage: state.setCurrentPage,
+      setPageSize: state.setPageSize,
       clearError: state.clearError,
     }))
   );
 
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showImportMultipleModal, setShowImportMultipleModal] = useState(false);
+  const [showImportZipModal, setShowImportZipModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState(searchTerm);
 
-  // Chargement initial - CORRECTION : utiliser useEffect au lieu de useState
-  useEffect(() => { fetchAll(); }, []);
+  // ── Chargement initial ──────────────────────────────────────────────────
+  useEffect(() => { fetchPage(0); }, []);
+
+  // ── Debounce de la recherche : on ne tape pas une requête serveur à chaque frappe ──
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+      fetchPage(0, pageSize, searchInput);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   // ─── Colonnes du tableau ───────────────────────────────────────────────────
   const columnHelper = createColumnHelper<NouveauBachelierResponse>();
-  
+
   const columns = useMemo(() => [
     columnHelper.accessor('numeroTable', {
       header: 'N° Table',
@@ -117,7 +196,8 @@ export default function BacheliersPage() {
     }),
     columnHelper.accessor('jury', {
       header: 'Jury',
-      cell: info => info.getValue()?.code || '—',
+      // ✅ CORRECTION : l'entité Jury n'a pas de champ "code", seulement "numero" et "name"
+      cell: info => info.getValue()?.numero || '—',
     }),
     columnHelper.accessor('dateCreation', {
       header: 'Date création',
@@ -145,29 +225,14 @@ export default function BacheliersPage() {
     }),
   ], []);
 
-  // ─── Filtrage côté client ──────────────────────────────────────────────────
-  const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return bacheliers;
-    const term = searchTerm.toLowerCase();
-    return bacheliers.filter(b => 
-      b.nom?.toLowerCase().includes(term) ||
-      b.prenoms?.toLowerCase().includes(term) ||
-      b.numeroTable?.toLowerCase().includes(term) ||
-      b.telephone?.includes(term)
-    );
-  }, [bacheliers, searchTerm]);
-
-  // ─── Table ─────────────────────────────────────────────────────────────────
+  // ─── Table (le tri/filtrage/pagination sont désormais gérés par le serveur) ─
   const table = useReactTable({
-    data: filteredData,
+    data: bacheliers,
     columns,
-    state: { sorting, globalFilter: searchTerm },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
+    manualPagination: true,
+    manualFiltering: true,
+    pageCount: totalPages,
   });
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
@@ -176,11 +241,21 @@ export default function BacheliersPage() {
     setDeleteConfirm(null);
   };
 
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    fetchPage(page, pageSize, searchTerm);
+  };
+
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    fetchPage(0, size, searchTerm);
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
   if (isLoading && bacheliers.length === 0) return <LoadingSpinner />;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
@@ -188,16 +263,28 @@ export default function BacheliersPage() {
             📚 Gestion des Bacheliers
           </h1>
           <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>
-            {filteredData.length} bachelier{filteredData.length > 1 ? 's' : ''}
+            {totalElements.toLocaleString('fr-FR')} bachelier{totalElements > 1 ? 's' : ''}
           </p>
         </div>
-        
-        <div style={{ display: 'flex', gap: 12 }}>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowImportModal(true)}
             style={buttonStyle('#16a34a')}
           >
             📥 Importer Excel
+          </button>
+          <button
+            onClick={() => setShowImportMultipleModal(true)}
+            style={buttonStyle('#2563eb')}
+          >
+            🗂️ Importer plusieurs fichiers
+          </button>
+          <button
+            onClick={() => setShowImportZipModal(true)}
+            style={buttonStyle('#f97316')}
+          >
+            🗜️ Importer des ZIP
           </button>
           <button
             onClick={() => window.location.href = '/bacheliers/ajouter'}
@@ -224,9 +311,9 @@ export default function BacheliersPage() {
       <div style={{ marginBottom: 20 }}>
         <input
           type="text"
-          placeholder="🔍 Rechercher par nom, prénom, numéro table ou téléphone..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="🔍 Rechercher par nom, prénom, numéro table, téléphone ou numéro de jury..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           style={{
             width: '100%', padding: '10px 16px', borderRadius: 10,
             border: '1px solid #e5e7eb', fontSize: 14, outline: 'none',
@@ -238,7 +325,15 @@ export default function BacheliersPage() {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff' }}>
+      <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff', position: 'relative' }}>
+        {isLoading && (
+          <div style={{
+            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.6)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5
+          }}>
+            <LoadingSpinner />
+          </div>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
@@ -246,16 +341,12 @@ export default function BacheliersPage() {
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
                     style={{
                       padding: '12px 16px', textAlign: 'left', fontWeight: 600,
-                      color: '#374151', cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                      userSelect: 'none'
+                      color: '#374151', userSelect: 'none'
                     }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getIsSorted() === 'asc' && ' 🔼'}
-                    {header.column.getIsSorted() === 'desc' && ' 🔽'}
                   </th>
                 ))}
               </tr>
@@ -283,46 +374,46 @@ export default function BacheliersPage() {
         </table>
       </div>
 
-      {/* Pagination - CORRECTION ici */}
+      {/* Pagination serveur */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 13, color: '#6b7280' }}>
-            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} -{' '}
-            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredData.length)} sur {filteredData.length}
+            {totalElements === 0 ? 0 : currentPage * pageSize + 1} -{' '}
+            {Math.min((currentPage + 1) * pageSize, totalElements)} sur {totalElements.toLocaleString('fr-FR')}
           </span>
           <select
-            value={table.getState().pagination.pageSize}
-            onChange={e => table.setPageSize(Number(e.target.value))}
+            value={pageSize}
+            onChange={e => changePageSize(Number(e.target.value))}
             style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
           >
-            {[5, 10, 20, 50].map((size) => (
+            {[10, 20, 50, 100].map((size) => (
               <option key={size} value={size}>{size} / page</option>
             ))}
           </select>
         </div>
-        
+
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} style={paginationButtonStyle}>
+          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 0} style={paginationButtonStyle}>
             ◀ Précédent
           </button>
-          {Array.from({ length: Math.min(5, table.getPageCount()) }, (_, i) => {
-            const page = i + Math.max(0, Math.min(table.getPageCount() - 5, table.getState().pagination.pageIndex - 2));
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            const page = i + Math.max(0, Math.min(totalPages - 5, currentPage - 2));
             return (
               <button
                 key={page}
-                onClick={() => table.setPageIndex(page)}
+                onClick={() => goToPage(page)}
                 style={{
                   ...paginationButtonStyle,
-                  background: table.getState().pagination.pageIndex === page ? '#16a34a' : '#fff',
-                  color: table.getState().pagination.pageIndex === page ? '#fff' : '#374151',
-                  borderColor: table.getState().pagination.pageIndex === page ? '#16a34a' : '#e5e7eb',
+                  background: currentPage === page ? '#16a34a' : '#fff',
+                  color: currentPage === page ? '#fff' : '#374151',
+                  borderColor: currentPage === page ? '#16a34a' : '#e5e7eb',
                 }}
               >
                 {page + 1}
               </button>
             );
           })}
-          <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} style={paginationButtonStyle}>
+          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages - 1} style={paginationButtonStyle}>
             Suivant ▶
           </button>
         </div>
@@ -348,11 +439,25 @@ export default function BacheliersPage() {
         </div>
       )}
 
-      {/* Import Modal */}
+      {/* Import Modal (fichier unique) */}
       <ImportExcelModal
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
-        onSuccess={() => { fetchAll(); setShowImportModal(false); }}
+        onSuccess={() => { fetchPage(0); setShowImportModal(false); }}
+      />
+
+      {/* Import Modal (plusieurs fichiers) */}
+      <ImportExcelMultipleModal
+        open={showImportMultipleModal}
+        onClose={() => setShowImportMultipleModal(false)}
+        onSuccess={() => { fetchPage(0); }}
+      />
+
+      {/* Import Modal (fichiers ZIP) */}
+      <ImportZipModal
+        open={showImportZipModal}
+        onClose={() => setShowImportZipModal(false)}
+        onSuccess={() => { fetchPage(0); }}
       />
     </div>
   );
@@ -370,7 +475,6 @@ const buttonStyle = (bg: string) => ({
   fontWeight: 600,
   cursor: 'pointer',
   transition: 'opacity 0.15s',
-  ':hover': { opacity: 0.9 }
 });
 
 const actionButtonStyle = (color: string) => ({
@@ -382,7 +486,6 @@ const actionButtonStyle = (color: string) => ({
   borderRadius: 6,
   transition: 'background 0.1s',
   color,
-  ':hover': { background: '#f3f4f6' }
 });
 
 const paginationButtonStyle = {

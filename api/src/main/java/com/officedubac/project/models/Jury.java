@@ -17,4 +17,5 @@ public class Jury
     private String id;
     private String numero;
     private String name;
+    private boolean technique;
 }
