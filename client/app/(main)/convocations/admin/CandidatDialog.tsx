@@ -1091,17 +1091,27 @@ const CandidatDialog = forwardRef<CandidatDialogRef, CandidatDialogProps>(
           if (etab.name) return etab.name;
           return undefined;
         };
+        let centreEcritParticulierId: string | undefined = undefined;
+        if (data.codeCES && typeof data.codeCES === "string") {
+          try {
+            const etablissements = await ParametrageService.getEtablissements();
+            const found = (etablissements || []).find(
+              (e: any) => e.code === data.codeCES
+            );
+            centreEcritParticulierId = found?.id ?? undefined;
+          } catch {
+            console.warn("Impossible de résoudre centreEcritParticulier via codeCES:", data.codeCES);
+          }
+        }
         setFormData({
-          ...data,
-          dateNaissance: data.dateNaissance || "",
-          etablissement: getEtablissementId(data.etablissement),
-          centreActEPS: getEtablissementId(data.centreActEPS),
-          centreEcrit: getEtablissementId(data.centreEcrit),
-          centreExamen: getEtablissementId(data.centreExamen),
-          centreEcritParticulier: getEtablissementId(
-            data.centreEcritParticulier,
-          ),
-        });
+        ...data,
+        dateNaissance: data.dateNaissance || "",
+        etablissement: getEtablissementId(data.etablissement),
+        centreActEPS: getEtablissementId(data.centreActEPS),
+        centreEcrit: getEtablissementId(data.centreEcrit),
+        centreExamen: getEtablissementId(data.centreExamen),
+        centreEcritParticulier: centreEcritParticulierId, // ← ID résolu via codeCES
+      });
         setIsEditing(true);
       } catch (error) {
         console.error("Erreur chargement:", error);

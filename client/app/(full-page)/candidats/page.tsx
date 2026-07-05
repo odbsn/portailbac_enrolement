@@ -11,6 +11,10 @@ import { motion } from "framer-motion";
 import { useSafeNavigation } from "@/app/(full-page)/hooks/useSafeNavigation";
 import Marquee from "react-fast-marquee";
 import { useCandidatStore } from "@/app/(main)/convocations/candidatStore";
+import {
+  NouveauBachelierResponse,
+  useNouveauBachelierStore,
+} from "@/app/(main)/convocations/nouveauBachelierStore";
 
 interface CandidatInfo {
   prenoms?: string;
@@ -73,7 +77,6 @@ const InfoBlock = ({
 //   return `Sciences de la Nature(P.C ou SVT)`;
 // };
 
-
 // Fonction pour obtenir le libellé correct selon l'index et la série
 const getOptionLabel = (index: number, serie?: string): string => {
   switch (serie) {
@@ -114,7 +117,7 @@ const getOptionLabel = (index: number, serie?: string): string => {
       if (index === 2) return "Sciences de la Nature (P.C ou SVT)";
       break;
   }
-  
+
   return `Option ${index + 1}`;
 };
 
@@ -132,6 +135,10 @@ export default function EspaceCandidat() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const toastRef = useRef<Toast>(null);
+  const [resultatBac, setResultatBac] =
+    useState<NouveauBachelierResponse | null>(null);
+  const [isLoadingResultat, setIsLoadingResultat] = useState(false);
+  const { searchByNumeroTable } = useNouveauBachelierStore();
 
   const {
     currentCandidat,
@@ -184,6 +191,24 @@ export default function EspaceCandidat() {
       clearError();
     };
   }, [router, safeNavigate]);
+
+  useEffect(() => {
+    const fetchResultat = async () => {
+      if (candidatInfo?.numeroTable) {
+        setIsLoadingResultat(true);
+        try {
+          const result = await searchByNumeroTable(candidatInfo.numeroTable);
+          setResultatBac(result);
+        } catch (error) {
+          console.error("Erreur lors de la récupération du résultat:", error);
+        } finally {
+          setIsLoadingResultat(false);
+        }
+      }
+    };
+
+    fetchResultat();
+  }, [candidatInfo?.numeroTable, searchByNumeroTable]);
 
   const handleLogout = () => {
     localStorage.removeItem("candidat_info");
@@ -372,6 +397,157 @@ export default function EspaceCandidat() {
               onTabChange={(e) => setActiveIndex(e.index)}
               className="custom-tabview mt-2"
             >
+              <TabPanel
+                header="Mon résultat au Bac"
+                leftIcon="pi pi-chart-line mr-2"
+              >
+                <div className="p-2 md:p-4">
+                  {isLoadingResultat ? (
+                    <div className="flex justify-content-center align-items-center p-4">
+                      <ProgressSpinner />
+                    </div>
+                  ) : resultatBac ? (
+                    <div className="resultat-container">
+                      <div className="resultat-card">
+                        {/* En-tête candidat */}
+                        <div className="resultat-header">
+                          <div className="resultat-avatar">
+                            <i className="pi pi-user"></i>
+                          </div>
+                          <div className="resultat-header-info">
+                            <p className="resultat-name">
+                              {candidat?.prenoms} {candidat?.nom}
+                            </p>
+                            {/* <p className="resultat-subinfo">
+                              Né(e) le {candidat?.dateNaissance || "-"} &middot;
+                              Table n° {candidat?.numeroTable || "-"}
+                            </p> */}
+                          </div>
+                        </div>
+
+                        {/* Bloc infos détaillées - en haut */}
+                        <div className="resultat-details-top">
+                          <div className="resultat-detail-row">
+                            <span>
+                              <i className="pi pi-id-card mr-2"></i>
+                              Numéro de table
+                            </span>
+                            <span className="resultat-detail-value">
+                              {candidat?.numeroTable || "-"}
+                            </span>
+                          </div>
+                          <div className="resultat-detail-row">
+                            <span>
+                              <i className="pi pi-user mr-2"></i>
+                              Candidat
+                            </span>
+                            <span className="resultat-detail-value">
+                              {candidat?.prenoms} {candidat?.nom}
+                            </span>
+                          </div>
+                          <div className="resultat-detail-row">
+                            <span>
+                              <i className="pi pi-calendar mr-2"></i>
+                              Date de naissance
+                            </span>
+                            <span className="resultat-detail-value">
+                              {candidat?.dateNaissance || "-"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Résultat principal */}
+                        <div className="resultat-body">
+                          <div
+                            className={`resultat-icon-circle ${
+                              resultatBac.resultat
+                                ?.toLowerCase()
+                                .includes("admis")
+                                ? "icon-success"
+                                : resultatBac.resultat
+                                    ?.toLowerCase()
+                                    .includes("ajourn")
+                                ? "icon-danger"
+                                : resultatBac.resultat
+                                    ?.toLowerCase()
+                                    .includes("autoris")
+                                ? "icon-warning"
+                                : "icon-neutral"
+                            }`}
+                          >
+                            {resultatBac.resultat
+                              ?.toLowerCase()
+                              .includes("admis") ? (
+                              <i className="pi pi-check" />
+                            ) : resultatBac.resultat
+                                ?.toLowerCase()
+                                .includes("ajourn") ? (
+                              <i className="pi pi-times" />
+                            ) : resultatBac.resultat
+                                ?.toLowerCase()
+                                .includes("autoris") ? (
+                              <i className="pi pi-clock" />
+                            ) : (
+                              <i className="pi pi-question" />
+                            )}
+                          </div>
+
+                          <p className="resultat-label">Résultat</p>
+                          <p
+                            className={`resultat-value ${
+                              resultatBac.resultat
+                                ?.toLowerCase()
+                                .includes("admis")
+                                ? "text-success"
+                                : resultatBac.resultat
+                                    ?.toLowerCase()
+                                    .includes("ajourn")
+                                ? "text-danger"
+                                : resultatBac.resultat
+                                    ?.toLowerCase()
+                                    .includes("autoris")
+                                ? "text-warning"
+                                : "text-neutral"
+                            }`}
+                          >
+                            {resultatBac.resultat}
+                          </p>
+
+                          {resultatBac.mention && (
+                            <div
+                              className={`resultat-mention ${
+                                resultatBac.resultat
+                                  ?.toLowerCase()
+                                  .includes("admis")
+                                  ? "mention-success"
+                                  : resultatBac.resultat
+                                      ?.toLowerCase()
+                                      .includes("ajourn")
+                                  ? "mention-danger"
+                                  : resultatBac.resultat
+                                      ?.toLowerCase()
+                                      .includes("autoris")
+                                  ? "mention-warning"
+                                  : "mention-neutral"
+                              }`}
+                            >
+                              <i className="pi pi-star-fill"></i>
+                              Mention : {resultatBac.mention}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-4">
+                      <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
+                      <p className="text-600">
+                        Les résultats seront disponibles prochainement.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabPanel>
               <TabPanel header="Informations" leftIcon="pi pi-user mr-2">
                 <div className="p-1 md:p-2">
                   {/* Bouton Télécharger la convocation */}
@@ -425,13 +601,15 @@ export default function EspaceCandidat() {
                         label="Type de candidat"
                         value={candidat?.typeCandidat}
                       />
-                      <InfoRow 
-                        label="EPS" 
+                      <InfoRow
+                        label="EPS"
                         value={
-                          candidat?.eps === 'A' ? 'Apte' :
-                          candidat?.eps === 'I' ? 'Inapte' :
-                          candidat?.eps || '-'
-                        } 
+                          candidat?.eps === "A"
+                            ? "Apte"
+                            : candidat?.eps === "I"
+                            ? "Inapte"
+                            : candidat?.eps || "-"
+                        }
                       />
                       <InfoRow
                         label="Établissement fréquenté"
@@ -489,20 +667,6 @@ export default function EspaceCandidat() {
                         }
                       />
                     </InfoBlock>
-                  </div>
-                </div>
-              </TabPanel>
-
-              <TabPanel
-                header="Mon résultat au Bac"
-                leftIcon="pi pi-chart-line mr-2"
-              >
-                <div className="p-2 md:p-4">
-                  <div className="text-center p-4">
-                    <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
-                    <p className="text-600">
-                      Les résultats seront disponibles prochainement.
-                    </p>
                   </div>
                 </div>
               </TabPanel>
@@ -622,6 +786,191 @@ export default function EspaceCandidat() {
           color: white;
         }
 
+        /* Styles pour le résultat */
+        .resultat-container {
+          display: flex;
+          justify-content: center;
+        }
+
+        .resultat-card {
+          width: 100%;
+          max-width: 480px;
+          background: white;
+          border-radius: 16px;
+          border: 1px solid rgba(33, 150, 243, 0.15);
+          overflow: hidden;
+        }
+
+        .resultat-header {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 1.25rem 1.5rem;
+          border-bottom: 1px solid #e9ecef;
+          background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+
+        .resultat-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #e6f1fb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .resultat-avatar i {
+          font-size: 1.4rem;
+          color: #1565c0;
+        }
+
+        .resultat-header-info {
+          min-width: 0;
+        }
+
+        .resultat-name {
+          font-weight: 700;
+          font-size: 1.05rem;
+          margin: 0;
+          color: #212529;
+        }
+
+        .resultat-subinfo {
+          font-size: 0.8rem;
+          color: #6c757d;
+          margin: 4px 0 0;
+        }
+
+        /* Bloc d'infos détaillées en haut */
+        .resultat-details-top {
+          padding: 1rem 1.5rem;
+          border-bottom: 1px solid #e9ecef;
+          background: #fafbfc;
+        }
+
+        .resultat-detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          font-size: 0.85rem;
+          border-bottom: 1px dashed #e9ecef;
+          color: #495057;
+        }
+
+        .resultat-detail-row:last-child {
+          border-bottom: none;
+        }
+
+        .resultat-detail-value {
+          font-weight: 600;
+          color: #212529;
+          text-align: right;
+        }
+
+        .resultat-body {
+          padding: 1.75rem 1.5rem;
+          text-align: center;
+        }
+
+        .resultat-icon-circle {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1rem;
+        }
+
+        .resultat-icon-circle i {
+          font-size: 1.8rem;
+        }
+
+        .icon-success {
+          background: #e8f5e9;
+        }
+        .icon-success i {
+          color: #2e7d32;
+        }
+
+        .icon-danger {
+          background: #fdecea;
+        }
+        .icon-danger i {
+          color: #c62828;
+        }
+
+        .icon-warning {
+          background: #fff4e5;
+        }
+        .icon-warning i {
+          color: #e65100;
+        }
+
+        .icon-neutral {
+          background: #f1f1f1;
+        }
+        .icon-neutral i {
+          color: #616161;
+        }
+
+        .resultat-label {
+          font-size: 0.8rem;
+          color: #6c757d;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0 0 4px;
+        }
+
+        .resultat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0 0 1rem;
+        }
+
+        .text-success {
+          color: #2e7d32;
+        }
+        .text-danger {
+          color: #c62828;
+        }
+        .text-warning {
+          color: #e65100;
+        }
+        .text-neutral {
+          color: #616161;
+        }
+
+        .resultat-mention {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.5rem 1.25rem;
+          border-radius: 50px;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .mention-success {
+          background: #e8f5e9;
+          color: #2e7d32;
+        }
+        .mention-danger {
+          background: #fdecea;
+          color: #c62828;
+        }
+        .mention-warning {
+          background: #fff4e5;
+          color: #e65100;
+        }
+        .mention-neutral {
+          background: #f1f1f1;
+          color: #616161;
+        }
+
         @media (max-width: 900px) {
           .three-blocks-container {
             flex-direction: column;
@@ -630,6 +979,21 @@ export default function EspaceCandidat() {
 
           .info-block {
             width: 100%;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .resultat-card {
+            border-radius: 12px;
+          }
+          .resultat-header {
+            padding: 1rem 1.25rem;
+          }
+          .resultat-details-top {
+            padding: 0.85rem 1.25rem;
+          }
+          .resultat-body {
+            padding: 1.5rem 1.25rem;
           }
         }
 

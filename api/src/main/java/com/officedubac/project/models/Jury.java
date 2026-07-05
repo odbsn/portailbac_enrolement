@@ -15,5 +15,6 @@ public class Jury
 {
     @Id
     private String id;
-    private String code;
+    private String numero;
+    private String name;
 }

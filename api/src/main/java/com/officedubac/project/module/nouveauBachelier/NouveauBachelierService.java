@@ -23,4 +23,5 @@ public interface NouveauBachelierService {
 //    public List<String> importerDepuisExcel(InputStream inputStream) throws IOException;
     public ImportResult importerDepuisExcel(InputStream inputStream) throws IOException;
     List<String> importerDepuisCsv(InputStream inputStream) throws IOException;
+    Optional<NouveauBachelierResponse> getBachelierByNumeroTable(String numeroTable) throws BusinessResourceException;
 }

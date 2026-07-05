@@ -14,6 +14,7 @@ import com.officedubac.project.module.epreuve.Epreuve;
 import com.officedubac.project.module.epreuve.EpreuveMapper;
 import com.officedubac.project.module.epreuve.dto.EpreuveResponse;
 import com.officedubac.project.module.jour.Jour;
+import com.officedubac.project.repository.EtablissementRepository;
 import com.officedubac.project.services.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,7 @@ public class CandidatFinisServiceImpl implements CandidatFinisService {
     private final ConvocationPdfService convocationPdfService;
     private final ConvocationStorageConfig storageConfig;
     private final ConvocationReactiveService convocationReactiveService;
+    private final EtablissementRepository etablissementRepository;
 
     private static final String COLLECTION_NAME = "candidat_finis";
     private static final String EPREUVE_COLLECTION = "epreuve";
@@ -352,6 +354,18 @@ public Etablissement getEtablissementUtilisateurConnecte() {
                 formatDate(existingEntity.getDateNaissance()) : null;
         // Mettre à jour
         candidatFinisMapper.updateEntity(existingEntity, request);
+        if (request.getCentreEcritParticulier() != null
+                && !request.getCentreEcritParticulier().isBlank()) {
+
+            Etablissement centreParticulier = etablissementRepository
+                    .findById(request.getCentreEcritParticulier())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Établissement (centre particulier) non trouvé avec l'id : "
+                                    + request.getCentreEcritParticulier()));
+
+            existingEntity.setCentreEcritParticulier(centreParticulier.getName());
+            existingEntity.setCodeCES(centreParticulier.getCode());
+        }
         CandidatFinis updatedEntity = candidatFinisRepository.save(existingEntity);
         log.info("✅ Candidat mis à jour: id={}, numéro table={}", updatedEntity.getId(), updatedEntity.getNumeroTable());
 
