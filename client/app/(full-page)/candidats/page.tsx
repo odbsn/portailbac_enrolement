@@ -542,7 +542,7 @@ export default function EspaceCandidat() {
                     <div className="text-center p-4">
                       <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
                       <p className="text-600">
-                        Les résultats seront disponibles prochainement.
+                        Les résultats seront disponibles au plus tard le mardi 7 juillet 2026.
                       </p>
                     </div>
                   )}
