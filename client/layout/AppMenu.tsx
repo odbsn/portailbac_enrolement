@@ -363,6 +363,17 @@ const AppMenu = () => {
         },
       ].filter(Boolean),
     },
+    hasAccess(["INSPECTEUR_ACADEMIE"]) && {
+      label: "Candidats Inspection Académie",
+      icon: "pi pi-home",
+      items: [
+        {
+          label: "Listes & Convocations",
+          icon: "pi pi-fw pi-money-bill",
+          to: "/convocations/inspection-academie",
+        },
+      ].filter(Boolean),
+    },
   ].filter(Boolean) as MenuModal[];
 
   return (

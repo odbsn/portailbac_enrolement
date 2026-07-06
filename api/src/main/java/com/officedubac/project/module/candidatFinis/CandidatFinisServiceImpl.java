@@ -4,6 +4,7 @@ import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.exception.DuplicateResourceException;
 import com.officedubac.project.exception.ResourceNotFoundException;
 import com.officedubac.project.models.Etablissement;
+import com.officedubac.project.models.InspectionAcademie;
 import com.officedubac.project.models.User;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisRequest;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisResponse;
@@ -636,7 +637,6 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         Query query = new Query();
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
-        // ===== AJOUT DU TRI =====
         Sort sort = Sort.by("serie").ascending()
                 .and(Sort.by("nom").ascending())
                 .and(Sort.by("prenoms").ascending());
@@ -647,8 +647,10 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         log.info("📊 {} candidats trouvés pour l'export (triés par série, nom, prénoms)", candidats.size());
 
-        List<CandidatFinisResponse> responses = toResponsesWithEpreuves(candidats);
+        // ✅ Plus d'épreuves ici non plus
+        List<CandidatFinisResponse> responses = toResponsesWithoutEpreuves(candidats);
         enrichWithResultats(responses);
+
         return candidatExportService.generateCandidatsExcel(responses);
     }
     @Override
@@ -912,5 +914,117 @@ public Etablissement getEtablissementUtilisateurConnecte() {
                                 }
                             });
                 });
+    }
+    // ==================== MÉTHODES AVEC FILTRE INSPECTION ACADÉMIE ====================
+
+    @Override
+    public InspectionAcademie getInspectionAcademieUtilisateurConnecte() {
+        User appUser = authService.getCurrentUser();
+
+        if (appUser == null) {
+            throw new BusinessResourceException("unauthorized",
+                    "Utilisateur non connecté", HttpStatus.UNAUTHORIZED);
+        }
+
+        log.info("Utilisateur connecté: {}", appUser.getLogin());
+
+        InspectionAcademie inspectionAcademie = null;
+
+        if (appUser.getActeur() != null) {
+            inspectionAcademie = appUser.getActeur().getInspectionAcademie();
+            if (inspectionAcademie != null) {
+                log.info("Inspection Académie récupérée: {} ({})",
+                        inspectionAcademie.getName(), inspectionAcademie.getId());
+            } else {
+                log.warn("L'acteur n'a pas d'inspection académie associée");
+            }
+        } else {
+            log.warn("L'utilisateur n'a pas d'acteur associé");
+        }
+
+        if (inspectionAcademie == null) {
+            throw new BusinessResourceException("no-inspection-academie",
+                    "Aucune inspection académie associée à l'utilisateur: " + appUser.getLogin(),
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        return inspectionAcademie;
+    }
+
+    @Override
+    public PageResponse<CandidatFinisResponse> getAllByInspectionAcademieConnectee(Pageable pageable) {
+        log.info("Fetching all candidats of connected user's inspection académie");
+        return getWithFiltersByInspectionAcademieConnectee(
+                null, null, null, null, null, null, null, null, pageable);
+    }
+
+    @Override
+    public PageResponse<CandidatFinisResponse> getWithFiltersByInspectionAcademieConnectee(
+            String keyword,
+            String serie,
+            String jury,
+            String typeCandidat,
+            String statutResultat,
+            String sexe,
+            String nationalite,
+            String etablissementCode,
+            Pageable pageable) {
+
+        log.info("Fetching candidats of connected user's inspection académie with filters");
+
+        InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
+
+        Query query = buildFilterQuery(keyword, serie, jury, null, typeCandidat,
+                statutResultat, sexe, nationalite, etablissementCode);
+        query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
+                .is(new ObjectId(inspectionAcademie.getId())));
+
+        long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
+        query.with(pageable);
+
+        List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
+        Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
+        Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
+        enrichWithResultats(responsePage.getContent());
+
+        return toPageResponse(responsePage);
+    }
+
+    @Override
+    public ByteArrayInputStream exportAllCandidatsToExcelByInspectionAcademie() {
+        log.info("📊 Export de TOUS les candidats de l'inspection académie vers Excel");
+
+        InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
+                .is(new ObjectId(inspectionAcademie.getId())));
+
+        Sort sort = Sort.by("etablissement.name").ascending()
+                .and(Sort.by("serie").ascending())
+                .and(Sort.by("nom").ascending())
+                .and(Sort.by("prenoms").ascending());
+
+        query.with(sort);
+
+        List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
+
+        log.info("📊 {} candidats trouvés pour l'export", candidats.size());
+
+        // ✅ Plus d'épreuves = plus de N+1
+        List<CandidatFinisResponse> responses = toResponsesWithoutEpreuves(candidats);
+        enrichWithResultats(responses);
+
+        return candidatExportService.generateCandidatsExcel(responses);
+    }
+    /**
+     * Convertit une liste de candidats en réponses SANS les épreuves.
+     * Utilisé pour l'export Excel où les épreuves ne sont pas nécessaires.
+     * ⚡ Évite le N+1 sur getEpreuvesBySerieOrdered.
+     */
+    private List<CandidatFinisResponse> toResponsesWithoutEpreuves(List<CandidatFinis> candidats) {
+        return candidats.stream()
+                .map(candidatFinisMapper::toResponse)
+                .collect(Collectors.toList());
     }
 }

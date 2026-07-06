@@ -38,7 +38,6 @@ public interface NouveauBachelierService {
 
     List<String> importerDepuisCsv(InputStream inputStream) throws IOException;
     Optional<NouveauBachelierResponse> getBachelierByNumeroTable(String numeroTable) throws BusinessResourceException;
-
     // ✅ Liste des jurys (collection "jury") qui n'ont encore AUCUN bachelier chargé dans "nouveauBachelier"
     List<Jury> findJurysNonCharges(Boolean technique) throws BusinessResourceException;
 }
