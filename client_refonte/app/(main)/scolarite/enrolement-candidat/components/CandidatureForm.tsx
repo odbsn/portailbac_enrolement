@@ -16,6 +16,7 @@ import {
   CountrySelect,
   PhoneInput,
   StatusBadge,
+  CentreEtatCivilSelect,
 } from "./Common";
 import {
   SEXE_OPTIONS,
@@ -76,7 +77,9 @@ const SectionTitle: React.FC<{ icon: string; label: string }> = ({
   label,
 }) => (
   <div className="candidature-section-title">
-    <i className={`pi ${icon}`} />
+    <div className="section-title-icon-wrapper">
+      <i className={`pi ${icon}`} />
+    </div>
     <span>{label}</span>
   </div>
 );
@@ -341,7 +344,10 @@ export const CandidatureForm: React.FC<{
             {/* Colonne gauche : Scolarité + Acte naissance + Identité + Contact */}
             <div className="candidature-col candidature-col--left">
               {/* Scolarité */}
-              <SectionTitle icon="pi-graduation-cap" label="Informations personnelles & Scolaires" />
+              {/* <SectionTitle
+                icon="pi-graduation-cap"
+                label="Informations personnelles & Scolaires"
+              /> */}
               <CustomFieldset legend="Informations scolaires">
                 <div className="grid">
                   <FormField
@@ -530,37 +536,15 @@ export const CandidatureForm: React.FC<{
                       }`}
                     />
                   </FormField>
-                  <FormField
+                  <CentreEtatCivilSelect
+                    formik={formik}
+                    fieldName="centreEtatCivil"
                     label="Centre État Civil"
+                    cecs={memoizedCecs}
                     required
-                    error={
-                      formik.touched.centreEtatCivil &&
-                      formik.errors.centreEtatCivil
-                    }
+                    disabled={disabled}
                     col={4}
-                  >
-                    <OptimizedDropdown
-                      id="centreEtatCivil"
-                      name="centreEtatCivil"
-                      value={formik.values.centreEtatCivil}
-                      onChange={(e) => {
-                        formik.setFieldValue("centreEtatCivil", e.value);
-                        formik.setFieldValue("codeCentre", e.value?.code);
-                      }}
-                      options={memoizedCecs}
-                      optionLabel="name"
-                      placeholder="Sélectionner"
-                      disabled={disabled}
-                      filter
-                      loading={loading}
-                      className={`p-inputtext-sm w-full ${
-                        formik.touched.centreEtatCivil &&
-                        formik.errors.centreEtatCivil
-                          ? "p-invalid"
-                          : ""
-                      }`}
-                    />
-                  </FormField>
+                  />
                   <FormField
                     label="Année"
                     required
@@ -742,7 +726,7 @@ export const CandidatureForm: React.FC<{
                     label="Sexe"
                     required
                     error={formik.touched.gender && formik.errors.gender}
-                    col={1}
+                    col={2}
                   >
                     <OptimizedDropdown
                       id="gender"
@@ -798,7 +782,7 @@ export const CandidatureForm: React.FC<{
                     error={
                       formik.touched.place_birth && formik.errors.place_birth
                     }
-                    col={3}
+                    col={2}
                   >
                     <InputText
                       id="place_birth"
@@ -885,7 +869,7 @@ export const CandidatureForm: React.FC<{
 
             {/* Colonne droite : Matières & épreuves + Résumé */}
             <div className="candidature-col candidature-col--right">
-              <SectionTitle icon="pi-book" label="Matières & épreuves" />
+              {/* <SectionTitle icon="pi-book" label="Matières & épreuves" /> */}
 
               {showMatieresOptionnelles && (
                 <CustomFieldset
@@ -1138,11 +1122,7 @@ export const CandidatureForm: React.FC<{
             <Button
               severity="success"
               icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-save"}
-              label={
-                isSaving
-                  ? "Enregistrement..."
-                  : "ENREGISTRER LE DOSSIER"
-              }
+              label={isSaving ? "Enregistrement..." : "ENREGISTRER LE DOSSIER"}
               type="submit"
               disabled={isSaving}
               className="candidature-submit"

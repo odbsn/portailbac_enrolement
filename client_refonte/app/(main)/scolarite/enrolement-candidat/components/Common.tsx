@@ -90,7 +90,6 @@ interface CountrySelectProps {
   col?: number;
 }
 
-// Fonction pour obtenir le code du pays pour le drapeau
 const getCountryCode = (countryName: string): string => {
   const countryMap: { [key: string]: string } = {
     Sénégal: "SN",
@@ -126,7 +125,6 @@ const getCountryCode = (countryName: string): string => {
   return countryMap[countryName] || "";
 };
 
-// Template pour afficher le drapeau dans la liste
 const countryOptionTemplate = (option: any) => {
   if (!option) return null;
   const code = option.code || option.iso2 || getCountryCode(option.name);
@@ -149,7 +147,6 @@ const countryOptionTemplate = (option: any) => {
   );
 };
 
-// Template pour afficher le drapeau dans la valeur sélectionnée
 const selectedCountryTemplate = (option: any) => {
   if (!option) return null;
   const code = option.code || option.iso2 || getCountryCode(option.name);
@@ -204,6 +201,82 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
         virtualScrollerOptions={{ itemSize: 38 }}
         itemTemplate={countryOptionTemplate}
         valueTemplate={selectedCountryTemplate}
+        className={`p-inputtext-sm w-full ${error ? "p-invalid" : ""}`}
+      />
+    </FormField>
+  );
+};
+
+// ===== CentreEtatCivilSelect =====
+interface CentreEtatCivilSelectProps {
+  formik: any;
+  fieldName: string;
+  label: string;
+  cecs: any[];
+  required?: boolean;
+  disabled?: boolean;
+  col?: number;
+}
+
+const centreOptionTemplate = (option: any) => {
+  if (!option) return null;
+  return (
+    <div className="flex align-items-center gap-2">
+      <span className="font-bold text-blue-600">{option.code}</span>
+      <span className="text-gray-400">-</span>
+      <span>{option.name}</span>
+    </div>
+  );
+};
+
+const selectedCentreTemplate = (option: any) => {
+  if (!option) return <span>Sélectionner un centre</span>;
+  return (
+    <div className="flex align-items-center gap-2">
+      <span className="font-bold text-blue-600">{option.code}</span>
+      <span className="text-gray-400">-</span>
+      <span>{option.name}</span>
+    </div>
+  );
+};
+
+export const CentreEtatCivilSelect: React.FC<CentreEtatCivilSelectProps> = ({
+  formik,
+  fieldName,
+  label,
+  cecs,
+  required = false,
+  disabled = false,
+  col = 6,
+}) => {
+  const error = formik.touched[fieldName] && formik.errors[fieldName];
+
+  const sortedCecs = useMemo(() => {
+    if (!cecs || !Array.isArray(cecs)) return [];
+    return [...cecs].sort((a, b) => a.name?.localeCompare(b.name) || 0);
+  }, [cecs]);
+
+  return (
+    <FormField label={label} required={required} error={error} col={col}>
+      <Dropdown
+        id={fieldName}
+        name={fieldName}
+        value={formik.values[fieldName]}
+        onChange={(e) => {
+          formik.setFieldValue(fieldName, e.value);
+          formik.setFieldValue("codeCentre", e.value?.code || "");
+        }}
+        options={sortedCecs}
+        optionLabel="name"
+        placeholder="Sélectionner un centre d'état civil"
+        disabled={disabled}
+        filter
+        filterMatchMode="contains"
+        showFilterClear
+        scrollHeight="250px"
+        virtualScrollerOptions={{ itemSize: 38 }}
+        itemTemplate={centreOptionTemplate}
+        valueTemplate={selectedCentreTemplate}
         className={`p-inputtext-sm w-full ${error ? "p-invalid" : ""}`}
       />
     </FormField>

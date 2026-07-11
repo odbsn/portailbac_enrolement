@@ -1,8 +1,12 @@
-/* app/scolarite/enrolement-candidat/style.css */
+/* ============================================
+   app/scolarite/enrolement-candidat/style.css
+   Version optimisée - Sans doublons
+   ============================================ */
 
 :root {
   --oba-primary: #3d83f6;
   --oba-primary-light: #e8f0f7;
+  --oba-primary-dark: #2a6fd4;
   --oba-accent: #c8862c;
   --oba-success: #1f7a4d;
   --oba-danger: #b3261e;
@@ -11,6 +15,10 @@
   --oba-border: #dbe3ea;
   --oba-surface: #ffffff;
   --oba-surface-subtle: #f6f8fa;
+  
+  /* Box-shadows */
+  --shadow-sm: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+  --shadow-hover: rgba(14, 30, 37, 0.16) 0px 4px 8px 0px, rgba(14, 30, 37, 0.40) 0px 4px 24px 0px;
 }
 
 /* ===== Table des candidats ===== */
@@ -19,12 +27,12 @@
 
 /* ===== Fieldsets ===== */
 .custom-fieldset {
-  border: 1px solid #3d83f6;
+  border: 1px solid var(--oba-primary);
   border-radius: 10px;
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1.25rem 1.25rem 1.25rem;
   margin-bottom: 1rem;
   background: var(--oba-surface);
-  box-shadow: 0 1px 2px rgba(28, 39, 51, 0.04);
+  box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
   animation: slideInUp 0.4s ease forwards;
   position: relative;
@@ -32,7 +40,7 @@
 
 .custom-fieldset:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(61, 131, 246, 0.15);
+  box-shadow: var(--shadow-hover);
 }
 
 .custom-fieldset::after {
@@ -53,19 +61,106 @@
   opacity: 1;
 }
 
+/* ===== Légendes des fieldsets - Style encadré comme l'image ===== */
 .custom-fieldset legend {
   color: var(--oba-primary);
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  padding: 0 0.5rem;
-  transition: color 0.3s ease;
+  padding: 0.35rem 0.85rem;
+  background: var(--oba-surface);
+  border: 1px solid var(--oba-primary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  /* Ajustement pour que la légende chevauche la bordure */
+  margin-left: 0.5rem;
+  margin-bottom: 0;
+  width: auto;
+  max-width: calc(100% - 1rem);
 }
 
 .custom-fieldset:hover legend {
-  color: #2a6fd4;
+  color: var(--oba-primary-dark);
+  border-color: var(--oba-primary-dark);
+  box-shadow: var(--shadow-hover);
 }
+
+/* ===== Titres de section ===== */
+.candidature-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--oba-ink);
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--oba-surface);
+  border: 1px solid var(--oba-primary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  animation: slideInUp 0.4s ease forwards;
+}
+
+.candidature-section-title:hover {
+  transform: translateY(-2px);
+  border-color: var(--oba-primary-dark);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Icône du titre */
+.candidature-section-title .section-title-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--oba-primary);
+  border-radius: 6px;
+  color: white;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.candidature-section-title .section-title-icon-wrapper i {
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.candidature-section-title span {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--oba-ink);
+}
+
+/* Effet au survol sur l'icône */
+.candidature-section-title:hover .section-title-icon-wrapper {
+  background: var(--oba-primary-dark);
+  transform: scale(1.05) rotate(-5deg);
+}
+
+.candidature-section-title:hover .section-title-icon-wrapper i {
+  transform: scale(1.1);
+}
+
+/* ===== Délais d'animation pour les fieldsets ===== */
+.candidature-col--left .custom-fieldset:nth-child(1) { animation-delay: 0.05s; }
+.candidature-col--left .custom-fieldset:nth-child(2) { animation-delay: 0.1s; }
+.candidature-col--left .custom-fieldset:nth-child(3) { animation-delay: 0.15s; }
+.candidature-col--left .custom-fieldset:nth-child(4) { animation-delay: 0.2s; }
+.candidature-col--left .custom-fieldset:nth-child(5) { animation-delay: 0.25s; }
+
+.candidature-col--right .custom-fieldset:nth-child(1) { animation-delay: 0.1s; }
+.candidature-col--right .custom-fieldset:nth-child(2) { animation-delay: 0.15s; }
+.candidature-col--right .custom-fieldset:nth-child(3) { animation-delay: 0.2s; }
+.candidature-col--right .custom-fieldset:nth-child(4) { animation-delay: 0.25s; }
+
+/* Délai pour les titres de section */
+.candidature-col--left .candidature-section-title { animation-delay: 0s; }
+.candidature-col--right .candidature-section-title { animation-delay: 0.05s; }
 
 /* ===== Dialogue ===== */
 .candidature-dialog .p-dialog-mask {
@@ -166,7 +261,7 @@
 }
 
 .candidature-columns-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #2a6fd4;
+  background: var(--oba-primary-dark);
 }
 
 /* Structure principale en 2 colonnes */
@@ -188,18 +283,10 @@
   gap: 0.5rem;
 }
 
-.candidature-col--left .custom-fieldset {
-  animation-delay: 0.1s;
-}
-
 .candidature-col--right {
   gap: 0.5rem;
   position: sticky;
   top: 0;
-}
-
-.candidature-col--right .custom-fieldset {
-  animation-delay: 0.2s;
 }
 
 /* ===== Footer ===== */
@@ -213,12 +300,13 @@
 
 .candidature-submit {
   min-width: 250px;
-  background: #3d83f6;
+  background: var(--oba-primary);
   padding: 0.75rem 2rem !important;
   font-weight: 600;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  border: none;
 }
 
 .candidature-submit::before {
@@ -248,34 +336,6 @@
 
 .candidature-submit:active {
   transform: translateY(0);
-}
-
-/* ===== Titres de section ===== */
-.candidature-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--oba-primary);
-  margin-bottom: 0.6rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--oba-primary-light);
-  transition: all 0.3s ease;
-}
-
-.candidature-section-title i {
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.candidature-section-title:hover i {
-  transform: rotate(-10deg) scale(1.2);
-  color: #2a6fd4;
-}
-
-.candidature-section-title:hover {
-  color: #2a6fd4;
 }
 
 /* ===== Dropdowns ===== */
@@ -519,6 +579,26 @@
   
   .custom-fieldset {
     padding: 0.75rem 0.75rem 1rem;
+  }
+  
+  .custom-fieldset legend {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+  }
+  
+  .candidature-section-title {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    gap: 0.5rem;
+  }
+  
+  .candidature-section-title .section-title-icon-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .candidature-section-title .section-title-icon-wrapper i {
+    font-size: 0.85rem;
   }
   
   .candidature-footer {
