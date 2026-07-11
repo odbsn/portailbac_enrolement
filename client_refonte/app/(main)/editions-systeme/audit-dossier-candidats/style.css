@@ -1,0 +1,61 @@
+/* ===== INDICATORS (petits ronds) ===== */
+
+/* Style par défaut des indicateurs */
+.p-carousel .p-carousel-indicators .p-carousel-indicator button {
+  background-color: #d1d5db; /* gris clair */
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+/* Indicateur actif */
+.p-carousel .p-carousel-indicators .p-carousel-indicator.p-highlight button {
+  background-color: #000dff; /* bleu */
+  transform: scale(1.2);
+}
+
+/* ===== FLECHES PREV / NEXT ===== */
+.p-carousel .p-carousel-prev,
+.p-carousel .p-carousel-next {
+  background: #000dff;   /* bleu */
+  color: #ffffff;        /* icône blanche */
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  border: none;
+}
+
+.p-datatable .p-filter-row > th {
+    padding: 0.25rem;
+}
+
+/* Inputs de filtre */
+.p-datatable .p-column-filter input {
+    height: 20px;          /* augmente la hauteur */
+    font-size: 1rem;       /* texte plus lisible */
+
+    width: 100px; 
+}
+
+/* Dropdowns de filtre */
+.p-datatable .p-column-filter .p-dropdown {
+    height: 42px;
+}
+
+.p-datatable .p-column-filter .p-dropdown-label {
+    line-height: 42px;
+    font-size: 1rem;
+}
+
+/* Calendar / Date filter */
+.p-datatable .p-column-filter .p-calendar input {
+    height: 42px;
+}
+
+
