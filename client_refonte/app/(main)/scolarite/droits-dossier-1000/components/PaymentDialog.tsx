@@ -151,7 +151,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
               <i className="pi pi-wallet"></i>
             </div>
             <div>
-              <h3 className="dialog-header-title">Paiement des droits</h3>
+              <h3 className="dialog-header-title">Paiement des droits de dossier</h3>
               <p className="dialog-header-subtitle">Office du Bac</p>
             </div>
           </div>
@@ -191,7 +191,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 <i className="pi pi-mobile"></i>
                 <span>Paiement mobile</span>
               </div>
-              <p className="info-card-text">Wave • Orange Money • Free Money</p>
+              <p className="info-card-text">Wave • OM • Free Money</p>
             </div>
             <div className="info-card info-card-green">
               <div className="info-card-header">
@@ -286,12 +286,12 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                   </div>
                 )}
               </div>
-              {amount === 0 && (
+              {/* {amount === 0 && (
                 <p className="amount-card-hint">
                   <i className="pi pi-info-circle"></i>
                   Saisissez le nombre de candidats
                 </p>
-              )}
+              )} */}
             </div>
 
             {/* Security Notice */}

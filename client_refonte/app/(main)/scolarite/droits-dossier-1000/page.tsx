@@ -132,7 +132,6 @@ const DroitsDossierPage: React.FC = () => {
         <div className="page-card">
           <PaymentHeader
             title="Droits de dossier à 1000 FCFA"
-            subtitle="Paiement par Wave, Orange Money ou Free Money destiné à l'Office du Bac"
             remainingDays={remainingDays}
             onPay={() => setShowPaymentDialog(true)}
           />

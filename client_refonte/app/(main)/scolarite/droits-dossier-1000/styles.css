@@ -38,11 +38,74 @@ body {
   border: 1px solid #eef2f6;
 }
 
+/* Ajouter dans style.css */
+
+/* ============================================
+   PAYMENT HEADER - BADGE ET JOURS RESTANTS
+   ============================================ */
+
+.payment-header-status-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.payment-header-status-wrapper .status-badge {
+  flex-shrink: 0;
+}
+
+.payment-header-status-wrapper .payment-header-days {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+}
+
+.payment-header-status-wrapper .payment-header-days-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-header-status-wrapper .payment-header-days-box i {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.payment-header-status-wrapper .payment-header-days-box span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.payment-header-status-wrapper .payment-header-days-box strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Ajustement responsive */
+@media (max-width: 640px) {
+  .payment-header-status-wrapper {
+    gap: 8px;
+  }
+  
+  .payment-header-status-wrapper .payment-header-days-box {
+    padding: 3px 10px;
+  }
+  
+  .payment-header-status-wrapper .payment-header-days-box span {
+    font-size: 11px;
+  }
+}
+
 /* ============================================
    PAYMENT HEADER - FOND BLEU
    ============================================ */
 .payment-header {
-  background: #2563eb;
+  background: #2196f3;
   padding: 32px 40px;
   position: relative;
 }
@@ -172,7 +235,7 @@ body {
 .btn-primary-gradient {
   background: #ffffff !important;
   border: none !important;
-  color: #2563eb !important;
+  color: #2196f3 !important;
   padding: 12px 28px !important;
   border-radius: 10px !important;
   font-weight: 600 !important;
@@ -246,7 +309,7 @@ body {
 }
 
 .transactions-title-icon i {
-  color: #2563eb;
+  color: #2196f3;
   font-size: 18px;
 }
 
@@ -289,7 +352,7 @@ body {
 
 .transactions-search input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: #2196f3;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
 }
@@ -345,7 +408,7 @@ body {
 }
 
 .transactions-table .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
-  background: #2563eb !important;
+  background: #2196f3 !important;
   color: white !important;
 }
 
@@ -390,7 +453,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #2563eb;
+  background: #2196f3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -462,7 +525,7 @@ body {
 }
 
 .info-card-blue .info-card-header i {
-  color: #2563eb;
+  color: #2196f3;
 }
 
 .info-card-green .info-card-header i {
@@ -481,7 +544,9 @@ body {
   margin: 0;
 }
 
-/* Form */
+/* ============================================
+   FORM - CHAMPS IDENTIQUES
+   ============================================ */
 .payment-form {
   display: flex;
   flex-direction: column;
@@ -517,6 +582,7 @@ body {
   margin-left: 2px;
 }
 
+/* Style de base pour les deux champs */
 .form-input {
   width: 100%;
   border-radius: 8px;
@@ -530,7 +596,7 @@ body {
 
 .form-input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: #2196f3;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
@@ -544,16 +610,83 @@ body {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08) !important;
 }
 
-/* PrimeReact InputNumber Override */
-.form-input .p-inputnumber {
-  width: 100%;
+/* ============================================
+   CORRECTION COMPLÈTE: InputNumber identique à InputMask
+   ============================================ */
+
+/* IMPORTANT: PrimeReact applique la className "form-input" directement
+   sur le wrapper <span class="p-inputnumber">, pas comme un ancêtre.
+   On cible donc .form-input.p-inputnumber (même élément, pas de descendant). */
+
+.form-input.p-inputnumber {
+  display: flex;
+  align-items: center;
 }
 
-.form-input .p-inputnumber-input {
+/* Supprime toutes les bordures/bg/ombres internes de l'input */
+.form-input.p-inputnumber .p-inputnumber-input,
+.form-input.p-inputnumber .p-inputnumber-input.p-inputtext,
+.form-input.p-inputnumber .p-inputnumber-input:enabled,
+.form-input.p-inputnumber .p-inputnumber-input:enabled:focus,
+.form-input.p-inputnumber .p-inputnumber-input:enabled:hover,
+.form-input.p-inputnumber .p-inputnumber-input.p-inputtext:enabled,
+.form-input.p-inputnumber .p-inputnumber-input.p-inputtext:enabled:focus,
+.form-input.p-inputnumber .p-inputnumber-input.p-inputtext:enabled:hover {
   border: none !important;
   padding: 0 !important;
   background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  color: #0f172a !important;
+  min-height: auto !important;
 }
+
+/* Boutons spinner (si affichés) */
+.form-input.p-inputnumber .p-inputnumber-button {
+  border: none !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  min-width: 24px !important;
+  width: 24px !important;
+  padding: 0 !important;
+}
+
+.form-input.p-inputnumber .p-inputnumber-button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.form-input.p-inputnumber .p-inputnumber-button:active {
+  background: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+/* Le focus doit apparaître sur le wrapper (span), pas sur l'input interne
+   -> :focus-within reproduit l'effet de .form-input:focus */
+.form-input.p-inputnumber:focus-within {
+  border-color: #2196f3 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08) !important;
+  outline: none !important;
+}
+
+/* Pour le mode error */
+.form-input-error.p-inputnumber .p-inputnumber-input,
+.form-input-error.p-inputnumber .p-inputnumber-input.p-inputtext {
+  border: none !important;
+  background: transparent !important;
+}
+
+.form-input-error.p-inputnumber:focus-within {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08) !important;
+}
+
+/* ============================================
+   FIN CORRECTION
+   ============================================ */
 
 .form-error {
   display: flex;
@@ -571,7 +704,7 @@ body {
 /* Amount Card - Fond bleu */
 .amount-card {
   border-radius: 12px;
-  background: #2563eb;
+  background: #2196f3;
   padding: 20px 24px;
   margin-top: 4px;
 }
@@ -651,7 +784,7 @@ body {
 
 .security-notice i {
   font-size: 14px;
-  color: #2563eb;
+  color: #2196f3;
   margin-right: 4px;
 }
 
@@ -685,7 +818,7 @@ body {
 }
 
 .btn-pay {
-  background: #2563eb !important;
+  background: #2196f3 !important;
   border: none !important;
   color: white !important;
   padding: 10px 28px !important;

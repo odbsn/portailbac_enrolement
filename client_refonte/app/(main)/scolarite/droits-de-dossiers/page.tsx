@@ -1,372 +1,556 @@
-'use client';
+"use client";
 
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { UserContext } from "@/app/userContext";
+import { CandidatureService } from "@/demo/service/CandidatureService";
+import { FileService } from "@/demo/service/FileService";
+import { Toast } from "primereact/toast";
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { FileUpload } from "primereact/fileupload";
+import dynamic from "next/dynamic";
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import "./styles.css";
 
-import 'primereact/resources/themes/lara-light-blue/theme.css';
-import 'primereact/resources/primereact.min.css';
-import 'primeicons/primeicons.css';
-import { FileService } from '@/demo/service/FileService';
-import axiosInstance2 from '@/app/api/axiosInstance2';
-import { Document, Page, pdfjs } from 'react-pdf';
-import { CandidatDTO, CandidatureService } from '@/demo/service/CandidatureService';
-import { UserContext } from '@/app/userContext';
-import { dt } from '@fullcalendar/core/internal-common';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { Toast } from 'primereact/toast';
-import { Toolbar } from 'primereact/toolbar';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { GrView } from 'react-icons/gr';
-
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-import { FileUpload } from 'primereact/fileupload';
-import dynamic from 'next/dynamic';
-
-//pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.mjs"
-
-const PdfViewer = dynamic(() => import('../../pdfViewer'), {
-    ssr: false // Désactive le rendu côté serveur pour ce composant
+const PdfViewer = dynamic(() => import("../../pdfViewer"), {
+  ssr: false,
 });
 
-const UploadPdf = () => {
-    const { user } = useContext(UserContext);
+interface ProgramData {
+  edition?: number;
+  date_end?: string;
+}
 
-    const [file, setFile] = useState(null);
-    const [fileId, setFileId] = useState(null);
-    const [fileUrl, setFileUrl] = useState(null);
-    const [numPages, setNumPages] = useState(null);
-    const [prog, setOneProg] = useState<{ edition?: number } | null>(null);
-    const [reloadTrigger, setReloadTrigger] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [recuDialog, setRecuDialog] = useState(false);
-    const [recuDialog2, setRecuDialog2] = useState(false);
-    const [globalFilter, setGlobalFilter] = useState(null);
-    const dt = useRef(null);
-    const [errorMessage, setErrorMessage] = useState('');
-    const toast = useRef(null);
+interface Versement {
+  id: number;
+  session: string;
+  date_deposit: string;
+  count_5000: number;
+  count_1000_EF: number;
+  file_id: number;
+  invalid_file: boolean;
+}
 
-    const [pixs, setPixsData] = useState([]);
+const DroitsDossiersPage: React.FC = () => {
+  const { user } = useContext(UserContext);
+  const toast = useRef<Toast>(null);
 
-    useEffect(() => {
-        CandidatureService.getLastProg().then((response) => {
-            //console.log("📦 Séries chargées :", data);
-            setOneProg(response);
+  const [program, setProgram] = useState<ProgramData | null>(null);
+  const [versements, setVersements] = useState<Versement[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(false);
+
+  // Dialog states
+  const [uploadDialogVisible, setUploadDialogVisible] = useState(false);
+  const [pdfDialogVisible, setPdfDialogVisible] = useState(false);
+
+  // Upload states
+  const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileId, setFileId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [globalFilter, setGlobalFilter] = useState("");
+  const dt = useRef<any>(null);
+
+  // Load program
+  useEffect(() => {
+    CandidatureService.getLastProg().then((response) => {
+      setProgram(response);
+    });
+  }, []);
+
+  // Load versements
+  useEffect(() => {
+    if (user?.acteur?.etablissement?.id && program?.edition) {
+      loadVersements();
+    }
+  }, [reloadTrigger, user, program]);
+
+  const loadVersements = async () => {
+    setLoading(true);
+    try {
+      const response = await CandidatureService.filterEtatsVersements_(
+        user?.acteur?.etablissement?.id,
+        program?.edition,
+      );
+      setVersements(response || []);
+    } catch (err) {
+      console.error("❌ Erreur chargement versements:", err);
+      toast.current?.show({
+        severity: "error",
+        summary: "Erreur",
+        detail: "Impossible de charger les versements",
+        life: 4000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // File upload handlers
+  const handleFileChange = (e: any) => {
+    const fileOK = e.files?.[0];
+    if (fileOK) {
+      if (fileOK.size > 5242880) {
+        setErrorMessage(
+          "❌ Le fichier dépasse la taille maximale autorisée de 5 Mo.",
+        );
+        setFile(null);
+      } else {
+        setFile(fileOK);
+        setErrorMessage("");
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setErrorMessage("⚠️ Veuillez d'abord charger un fichier PDF valide.");
+      return;
+    }
+
+    try {
+      const code = 1;
+      await FileService.uploadFile(
+        file,
+        Number(program?.edition),
+        user?.acteur?.etablissement?.id,
+        code,
+      );
+      toast.current?.show({
+        severity: "success",
+        summary: "Succès",
+        detail: "Fichier chargé avec succès",
+        life: 4000,
+      });
+      setUploadDialogVisible(false);
+      setFile(null);
+      setErrorMessage("");
+      setReloadTrigger((prev) => !prev);
+    } catch (error) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Erreur",
+        detail: "Impossible de téléverser le fichier",
+        life: 4000,
+      });
+    }
+  };
+
+  // View PDF
+  const handleViewPDF = async (rowData: Versement) => {
+    if (rowData.file_id) {
+      setFileId(rowData.file_id);
+      const response = await FileService.getViewUrl(rowData.file_id);
+      if (response) {
+        setFileUrl(response);
+        setPdfDialogVisible(true);
+      }
+    }
+  };
+
+  // Delete file
+  const handleDeleteFile = async (rowData: Versement) => {
+    try {
+      if (rowData.file_id) {
+        await FileService.deleteFile(rowData.file_id);
+        toast.current?.show({
+          severity: "success",
+          summary: "Succès",
+          detail: "Fichier supprimé avec succès",
+          life: 4000,
         });
-    }, []);
+        setReloadTrigger((prev) => !prev);
+      }
+    } catch (error) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Erreur",
+        detail: "Impossible de supprimer le fichier",
+        life: 4000,
+      });
+    }
+  };
 
-    useEffect(() => {
-        if (user?.acteur?.etablissement?.id && prog?.edition) {
-            loadFiles();
-        }
-    }, [reloadTrigger, user, prog]);
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString.replace(" ", "T"));
+    if (isNaN(date.getTime())) return "Date invalide";
+    return (
+      date.toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    );
+  };
 
-    const loadFiles = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await CandidatureService.filterEtatsVersements_(user?.acteur?.etablissement?.id, prog?.edition).then((response) => {
-                setPixsData(response);
-            });
-            console.log('OK', response);
-            //setCandidatData(response);
-        } catch (err) {
-            console.error('❌ Erreur chargement files :', err);
-            setError('Erreur lors du chargement');
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Table column templates
+  const statusBodyTemplate = (rowData: Versement) => {
+    const hasData =
+      Number(rowData?.count_5000 ?? 0) > 0 ||
+      Number(rowData?.count_1000_EF ?? 0) > 0;
 
-    // useEffect(() => {
-    //       if (user?.acteur?.etablissement?.id) {
-    //           FileService.getFiles(user?.acteur?.etablissement?.id).then((response) => {
-    //               setPixsData(response);
-    //           });
-    //       }
-    //   }, [user]);
+    if (rowData.invalid_file) {
+      return (
+        <span className="status-badge status-badge-error">
+          <i className="pi pi-times-circle"></i>
+          Fichier invalide
+        </span>
+      );
+    } else if (!hasData) {
+      return (
+        <span className="status-badge status-badge-processing">
+          <i className="pi pi-spin pi-spinner"></i>
+          En traitement
+        </span>
+      );
+    } else {
+      return (
+        <span className="status-badge status-badge-success">
+          <i className="pi pi-check-circle"></i>
+          Vignettes attribuées
+        </span>
+      );
+    }
+  };
 
-    useEffect(() => {
-        if (fileUrl) {
-            console.log('fileUrl chargé :', fileUrl);
-        }
-    }, [fileUrl]);
+  const v5000BodyTemplate = (rowData: Versement) => {
+    return (
+      <span className="vignette-badge vignette-badge-yellow">
+        {rowData.count_5000 || 0}
+      </span>
+    );
+  };
 
-    //const handleFileChange = (e) => setFile(e.target.files[0]);
+  const v1000BodyTemplate = (rowData: Versement) => {
+    return (
+      <span className="vignette-badge vignette-badge-green">
+        {rowData.count_1000_EF || 0}
+      </span>
+    );
+  };
 
-    const handleFileChange = (e) => {
-        const fileOK = e.files?.[0];
-        if (fileOK) {
-            if (fileOK.size > 5242880) {
-                console.log('OK');
-                setErrorMessage('❌ Le fichier dépasse la taille maximale autorisée de 5 Mo.');
-                setFile(null);
-            } else {
-                setFile(fileOK);
-                setErrorMessage('');
-            }
-        }
-    };
-
-    const handleUpload = async () => {
-        if (!file) {
-            setErrorMessage("⚠️ Veuillez d'abord charger un fichier PDF valide.");
-            return;
-        } else {
-            let code = 1;
-            await FileService.uploadFile(file, Number(prog?.edition), user?.acteur?.etablissement?.id, code);
-            toast.current.show({ severity: 'success', summary: 'Office du Bac', detail: 'Fichier chargé avec succès', life: 4000 });
-            setRecuDialog2(false);
-            await loadFiles();
-        }
-    };
-
-    const formatDate = (dateString: string) => {
-        if (!dateString) return '-'; // sécurité si null ou vide
-        const date = new Date(dateString.replace(' ', 'T')); // corrige les formats "yyyy-mm-dd hh:mm:ss"
-
-        if (isNaN(date.getTime())) return 'Date invalide';
-
-        return (
-            date.toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            }) +
-            ' ' +
-            date.toLocaleTimeString('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-        );
-    };
-
-    const codeBodyTemplate = (rowData) => {
-        const hasData =
-        Number(rowData?.count_5000 ?? 0) > 0 ||
-        Number(rowData?.count_1000_EF ?? 0) > 0;
-        return (
-            <>
-                <span className="p-column-title">id</span>
-                {rowData.id}
-                <br />
-                {!hasData && !rowData.invalid_file  ? (
-                    <span className="font-semibold text-blue-600">
-                        <b>🔄 EN COURS DE TRAITEMENT PAR OB</b>
-                    </span>
-                ) : rowData.invalid_file ? (
-                    <span className="font-semibold text-red-600">
-                        <b>❌ QUITTANCE OU FICHIER INVALIDE<br />
-                        (A refaire)</b>
-                    </span>
-                ) : (
-                    <span className="font-semibold text-green-600">
-                        <b>✅ VIGNETTES ATTRIBUÉES PAR OB</b>
-                    </span>
-                )}
-
-
-            </>
-        );
-    };
-
-    const sessionBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">sesssion</span>
-                <b>{rowData.session}</b>
-            </>
-        );
-    };
-
-    const dateBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">date</span>
-                {formatDate(rowData.date_deposit)}
-            </>
-        );
-    };
-
-    const v5000 = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">v5000</span>
-                <span
-                    className="rounded-full px-3 py-1 bg-yellow-100 text-black"
-                >
-                    <b>{rowData.count_5000}</b>
-                </span>
-            </>
-        );
-    };
-
-
-    const v1000 = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">v1000</span>
-                <span
-                    className="rounded-full px-3 py-1 bg-yellow-100 text-black"
-                ><b>{rowData.count_1000_EF}</b></span>
-                
-            </>
-        );
-    };
-
-    const actionBodyTemplate = (rowData) => {
-        const hasData =
-        Number(rowData?.count_5000 ?? 0) > 0 ||
-        Number(rowData?.count_1000_EF ?? 0) > 0;
-        return (
-            <>
-                <Button
-                    icon="pi pi-eye"
-                    rounded
-                    tooltip="Ouvrir le reçu"
-                    tooltipOptions={{ position: 'bottom' }}
-                    severity="info"
-                    className="mr-2"
-                    onClick={() => editProduct(rowData)}
-                />
-
-                {!hasData && (
-                <Button
-                    icon="pi pi-trash"
-                    rounded
-                    tooltip="Supprimer le fichier"
-                    tooltipOptions={{ position: 'bottom' }}
-                    severity="danger"
-                    className="mr-2"
-                    onClick={() => editProduct2(rowData)}
-                />
-                )}
-            </>
-        );
-    };
-
-    const editProduct = async (rowData) => {
-        setRecuDialog(true);
-        //console.log(rowData)
-        if (rowData.file_id) {
-            setFileId(rowData.file_id);
-            const response = await FileService.getViewUrl(rowData.file_id);
-            if (response) {
-                console.log('URL PDF:', response); // <---- ici
-                setFileUrl(response);
-                setRecuDialog(true);
-            }
-        }
-    };
-
-    const editProduct2 = async (rowData) => 
-    {
-        try 
-        {
-            if (rowData.file_id) 
-            {
-                await FileService.deleteFile(rowData.file_id);
-            }
-        loadFiles();
-        toast.current.show({ severity: 'success', summary: 'Office du Bac', detail: 'Fichier supprimé avec succès', life: 4000 });
-        } 
-            catch (error) 
-            {
-                    toast.current.show({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de supprimer le dossier',
-                        life: 5000
-                    });
-            }
-    };
-
-    const hideDialog = () => {
-        if (recuDialog) {
-            setRecuDialog(false);
-        }
-    };
-
-    const hideDialog2 = () => {
-        if (recuDialog2) {
-            setRecuDialog2(false);
-        }
-    };
-
-    const openNew = () => {
-        setRecuDialog2(true);
-    };
+  const actionBodyTemplate = (rowData: Versement) => {
+    const hasData =
+      Number(rowData?.count_5000 ?? 0) > 0 ||
+      Number(rowData?.count_1000_EF ?? 0) > 0;
 
     return (
-        <div>
-            <Dialog visible={recuDialog} style={{ width: '1000px' }} header="Etat de versement" modal className="p-fluid" onHide={hideDialog}>
-                {fileUrl ? <PdfViewer fileUrl={fileUrl} /> : <p>Chargement du PDF...</p>}
-            </Dialog>
-
-            <Dialog visible={recuDialog2} style={{ width: '1000px' }} header="Dépôt d'un état de versement des droits d'inscription des candidats au Trésor Public du Sénégal" modal className="p-fluid" onHide={hideDialog2}>
-                <div style={{ color: 'red' }}>
-                    <span><b>Mention utile 1 :</b> Veuillez remplir et signer l&apos;état de versement des droits d&apos;inscription.</span>
-                    <br />
-                    <span><b>Mention utile 2 :</b> Agrafez la <em><b>quittance numérique</b></em> délivrée par le Trésor en haut de l&apos;état de versement.</span>
-                    <br />
-                    <span><b>Mention utile 3 :</b> Veuillez scanner clairement (en couleur) l&apos;état de versement, quittance comprise, puis générez le exclusivement au format PDF.</span>
-                    <br />
-                    <span><b>Mention utile 4 :</b> La taille du fichier ne doit pas dépasser 5 Mo.</span>
-                    <br />
-                    <span><b>Mention utile 5 :</b> Chargez-le, puis téléversez-le sur la plateforme.</span>
-                    <br />
-                    <span><b>Mention utile 6 :</b> Aucun remboursement ne sera effectué une fois le paiement validé par le trésor.</span>
-                    <br />
-                    <span><b>Mention utile 7 :</b> Malgré le dépôt électronique sur la plateforme, la présentation des documents originaux en version physique sera exigée lors de la réception, <br/> veuillez les garder soigneusement.</span>
-                
-                </div>
-                <div className="col-md-6">
-                    <FileUpload mode="basic" accept="application/pdf" customUpload name="pdf" chooseLabel="Charger le PDF généré" onSelect={handleFileChange} className="mr-2 mt-5" />
-                    {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
-
-                    <Button label="Téléverser l'état de versement dans la plateforme" icon="pi pi-upload" className="p-button-success mt-2" onClick={handleUpload} />
-                </div>
-            </Dialog>
-
-            <div className="grid crud-demo">
-                <Toast ref={toast} />
-                <div className="col-12">
-                    <div className="card">
-                        <h5 className="mb-3">Droits d&apos;inscription des candidats : 5 000 FCFA et 1 000 FCFA (pour épreuve facultative) versés au Trésor Public</h5>
-
-                        <div className="flex flex-column md:flex-row md:items-center gap-3 ml-0">
-                            <div className="my-2">
-                                <Button severity="success" label="Déposer un état de versement" icon="pi pi-plus" className="mr-2" onClick={openNew} />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <DataTable
-                            ref={dt}
-                            value={pixs}
-                            paginator
-                            rows={5}
-                            rowsPerPageOptions={[5, 10, 25]}
-                            className="datatable-responsive"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Affichage de {first} à {last} des {totalRecords} enregistrement (s)"
-                            globalFilter={globalFilter}
-                            emptyMessage="Aucun versement n'a été effectué"
-                            responsiveLayout="scroll"
-                        >
-                            <Column field="id" header="Id" sortable body={codeBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                            <Column field="session" header="Session" sortable body={sessionBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                            <Column field="date" header="Date du dépôt" sortable body={dateBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                            <Column field="count_5000" header="Vignettes de 5000 FCFA" body={v5000} headerStyle={{ minWidth: '5rem' }}></Column>
-                            <Column field="count_1000" header="Vignettes de 1000 FCFA (Epr. Fac.)" body={v1000} headerStyle={{ minWidth: '5rem' }}></Column>
-                            <Column body={actionBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                        </DataTable>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="action-buttons">
+        <Button
+          icon="pi pi-eye"
+          rounded
+          tooltip="Ouvrir le reçu"
+          tooltipOptions={{ position: "bottom" }}
+          className="btn-action btn-action-view"
+          onClick={() => handleViewPDF(rowData)}
+        />
+        {!hasData && (
+          <Button
+            icon="pi pi-trash"
+            rounded
+            tooltip="Supprimer le fichier"
+            tooltipOptions={{ position: "bottom" }}
+            className="btn-action btn-action-delete"
+            onClick={() => handleDeleteFile(rowData)}
+          />
+        )}
+      </div>
     );
+  };
+
+  // Get remaining days
+  const getRemainingDays = (): number | null => {
+    if (!program?.date_end) return null;
+    const today = new Date().getTime();
+    const endDate = new Date(program.date_end).getTime();
+    return Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+  };
+
+  const remainingDays = getRemainingDays();
+  const isOpen = remainingDays !== null && remainingDays > 0;
+
+  return (
+    <div className="page-container">
+      <Toast ref={toast} />
+
+      <div className="max-w-7xl mx-auto">
+        <div className="page-card">
+          {/* ============================================
+                        HEADER - STYLE IDENTIQUE À droits-dossier-1000
+                    ============================================ */}
+          <div className="page-header">
+            <div className="page-header-content">
+              <div className="page-header-left">
+                <div className="page-header-badge">
+                  <div className="page-header-icon">
+                    <i className="pi pi-file-pdf"></i>
+                  </div>
+                  <span
+                    className={`status-badge ${
+                      isOpen ? "status-badge-open" : "status-badge-closed"
+                    }`}
+                  >
+                    {isOpen ? "● En cours" : "● Fermé"}
+                  </span>
+                </div>
+                <h1 className="page-header-title">
+                  Droits d'inscription des candidats
+                </h1>
+                <p className="page-header-subtitle">
+                  5 000 FCFA et 1 000 FCFA (pour épreuve facultative) versés au
+                  Trésor Public
+                </p>
+                {isOpen && remainingDays !== null && (
+                  <div className="page-header-days">
+                    <div className="page-header-days-box">
+                      <i className="pi pi-clock"></i>
+                      <span>
+                        <strong>{remainingDays}</strong> jour
+                        {remainingDays > 1 ? "s" : ""} restant
+                        {remainingDays > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="page-header-action">
+                {isOpen ? (
+                  <Button
+                    label="Déposer un état de versement"
+                    icon="pi pi-plus"
+                    className="btn-primary-gradient"
+                    onClick={() => setUploadDialogVisible(true)}
+                  />
+                ) : (
+                  <div className="page-header-closed">
+                    <div className="page-header-closed-icon">
+                      <i className="pi pi-exclamation-triangle"></i>
+                    </div>
+                    <span className="page-header-closed-text">
+                      La période de dépôt est fermée
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================
+                        TABLE - STYLE IDENTIQUE À droits-dossier-1000
+                    ============================================ */}
+          <div className="p-4 md:p-8">
+            <div className="table-header">
+              <div className="table-title">
+                <div className="table-title-icon">
+                  <i className="pi pi-list"></i>
+                </div>
+                <div>
+                  <h2>Historique des versements</h2>
+                  {!loading && (
+                    <p>
+                      {versements.length} versement
+                      {versements.length > 1 ? "s" : ""} au total
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="table-search">
+                <i className="pi pi-search"></i>
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DataTable
+              ref={dt}
+              value={versements}
+              loading={loading}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 20, 50]}
+              className="custom-datatable"
+              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              currentPageReportTemplate="Affichage de {first} à {last} des {totalRecords} enregistrement(s)"
+              globalFilter={globalFilter}
+              emptyMessage="Aucun versement trouvé"
+              responsiveLayout="scroll"
+              sortMode="multiple"
+              removableSort
+            >
+              <Column
+                field="id"
+                header="ID"
+                sortable
+                headerClassName="table-header-cell"
+                style={{ minWidth: "6rem" }}
+              />
+              <Column
+                field="session"
+                header="Session"
+                sortable
+                headerClassName="table-header-cell"
+                style={{ minWidth: "8rem" }}
+              />
+              <Column
+                field="date_deposit"
+                header="Date du dépôt"
+                sortable
+                body={(rowData) => formatDate(rowData.date_deposit)}
+                headerClassName="table-header-cell"
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                field="count_5000"
+                header="Vignettes 5000 FCFA"
+                body={v5000BodyTemplate}
+                headerClassName="table-header-cell"
+                style={{ minWidth: "8rem" }}
+              />
+              <Column
+                field="count_1000_EF"
+                header="Vignettes 1000 FCFA (Épr. Fac.)"
+                body={v1000BodyTemplate}
+                headerClassName="table-header-cell"
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                field="status"
+                header="Statut"
+                body={statusBodyTemplate}
+                headerClassName="table-header-cell"
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                body={actionBodyTemplate}
+                headerClassName="table-header-cell"
+                style={{ minWidth: "8rem" }}
+              />
+            </DataTable>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================
+                DIALOG - PDF VIEWER
+            ============================================ */}
+      <Dialog
+        visible={pdfDialogVisible}
+        style={{ width: "90vw", maxWidth: "1000px" }}
+        header="État de versement"
+        modal
+        className="custom-dialog"
+        onHide={() => setPdfDialogVisible(false)}
+      >
+        {fileUrl ? (
+          <PdfViewer fileUrl={fileUrl} />
+        ) : (
+          <p>Chargement du PDF...</p>
+        )}
+      </Dialog>
+
+      {/* ============================================
+                DIALOG - UPLOAD
+            ============================================ */}
+      <Dialog
+        visible={uploadDialogVisible}
+        style={{ width: "90vw", maxWidth: "800px" }}
+        header="Dépôt d'un état de versement"
+        modal
+        className="custom-dialog"
+        onHide={() => {
+          setUploadDialogVisible(false);
+          setFile(null);
+          setErrorMessage("");
+        }}
+      >
+        <div className="upload-dialog-content">
+          <div className="upload-info-box">
+            <div className="upload-info-item">
+              <span className="upload-info-number">1</span>
+              <p>
+                Remplir et signer l'état de versement des droits d'inscription
+              </p>
+            </div>
+            <div className="upload-info-item">
+              <span className="upload-info-number">2</span>
+              <p>
+                Agrafer la <strong>quittance numérique</strong> délivrée par le
+                Trésor en haut de l'état
+              </p>
+            </div>
+            <div className="upload-info-item">
+              <span className="upload-info-number">3</span>
+              <p>
+                Scanner clairement (en couleur) l'état de versement, quittance
+                comprise, au format PDF
+              </p>
+            </div>
+            <div className="upload-info-item">
+              <span className="upload-info-number">4</span>
+              <p>
+                La taille du fichier ne doit pas dépasser <strong>5 Mo</strong>
+              </p>
+            </div>
+            <div className="upload-info-item">
+              <span className="upload-info-number">5</span>
+              <p>Charger et téléverser le fichier sur la plateforme</p>
+            </div>
+            <div className="upload-info-item upload-info-warning">
+              <span className="upload-info-number">⚠</span>
+              <p>
+                <strong>Aucun remboursement</strong> ne sera effectué une fois
+                le paiement validé par le trésor
+              </p>
+            </div>
+            <div className="upload-info-item upload-info-warning">
+              <span className="upload-info-number">📌</span>
+              <p>
+                La présentation des documents originaux en version physique sera
+                exigée lors de la réception
+              </p>
+            </div>
+          </div>
+
+          <div className="upload-area">
+            <FileUpload
+              mode="basic"
+              accept="application/pdf"
+              customUpload
+              name="pdf"
+              chooseLabel="Charger le PDF généré"
+              onSelect={handleFileChange}
+              className="upload-file-input"
+            />
+            {errorMessage && <div className="upload-error">{errorMessage}</div>}
+            <Button
+              label="Téléverser l'état de versement"
+              icon="pi pi-upload"
+              className="btn-upload"
+              onClick={handleUpload}
+            />
+          </div>
+        </div>
+      </Dialog>
+    </div>
+  );
 };
-export default UploadPdf;
+
+export default DroitsDossiersPage;

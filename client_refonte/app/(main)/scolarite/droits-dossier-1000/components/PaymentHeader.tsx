@@ -3,14 +3,12 @@ import { Button } from "primereact/button";
 
 interface PaymentHeaderProps {
   title: string;
-  subtitle: string;
   remainingDays: number | null;
   onPay: () => void;
 }
 
 const PaymentHeader: React.FC<PaymentHeaderProps> = ({
   title,
-  subtitle,
   remainingDays,
   onPay,
 }) => {
@@ -24,30 +22,30 @@ const PaymentHeader: React.FC<PaymentHeaderProps> = ({
             <div className="payment-header-icon">
               <i className="pi pi-credit-card"></i>
             </div>
-            <span
-              className={`status-badge ${
-                isOpen ? "status-badge-open" : "status-badge-closed"
-              }`}
-            >
-              {isOpen ? "● En cours" : "● Fermé"}
-            </span>
+            <div className="payment-header-status-wrapper">
+              <span
+                className={`status-badge ${
+                  isOpen ? "status-badge-open" : "status-badge-closed"
+                }`}
+              >
+                {isOpen ? "● En cours" : "● Fermé"}
+              </span>
+              {isOpen && remainingDays !== null && (
+                <div className="payment-header-days">
+                  <div className="payment-header-days-box">
+                    <i className="pi pi-clock"></i>
+                    <span>
+                      <strong>{remainingDays}</strong> jour
+                      {remainingDays > 1 ? "s" : ""} restant
+                      {remainingDays > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <h1 className="payment-header-title">{title}</h1>
-          <p className="payment-header-subtitle">{subtitle}</p>
-
-          {isOpen && remainingDays !== null && (
-            <div className="payment-header-days">
-              <div className="payment-header-days-box">
-                <i className="pi pi-clock"></i>
-                <span>
-                  <strong>{remainingDays}</strong> jour
-                  {remainingDays > 1 ? "s" : ""} restant
-                  {remainingDays > 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="payment-header-action">

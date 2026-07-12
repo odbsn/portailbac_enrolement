@@ -1,4 +1,3 @@
-// app/scolarite/enrolement-candidat/components/CandidatureTable.tsx
 import React, { useState } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -23,43 +22,53 @@ export const CandidatureTable: React.FC<CandidatureTableProps> = ({
   onView,
   diffDays,
 }) => {
-  const [filter, setFilter] = useState("");
+  const [globalFilter, setGlobalFilter] = useState("");
 
   const actionBody = (row: any) => {
+    // Si période fermée, uniquement voir
     if (diffDays <= 0) {
       return (
         <Button
           icon="pi pi-eye"
           rounded
-          severity="success"
+          className="btn-action btn-action-view"
           onClick={() => onView(row)}
         />
       );
     }
+
+    // Si déjà validé
     if (row.decision === 1) {
       return (
-        <div className="flex items-center gap-2 text-green-600">
-          <span>✅</span>
-          <span className="text-sm font-semibold">Validé</span>
+        <div className="status-badge status-badge-success">
+          <i className="pi pi-check-circle"></i>
+          Validé
         </div>
       );
     }
+
     return (
-      <div className="flex gap-2">
+      <div className="action-buttons">
         <Button
           icon="pi pi-user-edit"
           rounded
-          severity="warning"
+          className="btn-action btn-action-edit"
           onClick={() => onEdit(row)}
         />
         {row.decision !== 2 && (
           <Button
             icon="pi pi-trash"
             rounded
-            severity="danger"
+            className="btn-action btn-action-delete"
             onClick={() => onDelete(row)}
           />
         )}
+        <Button
+          icon="pi pi-eye"
+          rounded
+          className="btn-action btn-action-view"
+          onClick={() => onView(row)}
+        />
       </div>
     );
   };
@@ -72,88 +81,110 @@ export const CandidatureTable: React.FC<CandidatureTableProps> = ({
     ).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
-  const header = (
-    <div className="flex flex-wrap align-items-center justify-content-between gap-2">
-      <span className="text-xl font-semibold">Liste des candidats</span>
-      <span className="p-input-icon-left">
-        <i className="pi pi-search" />
-        <InputText
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Recherche..."
-          className="p-inputtext-sm"
-        />
-      </span>
-    </div>
-  );
-
   return (
-    <DataTable
-      value={candidats}
-      loading={loading}
-      paginator
-      rows={10}
-      rowsPerPageOptions={[5, 10, 25, 50]}
-      className="p-datatable-sm"
-      globalFilter={filter}
-      emptyMessage="Aucun candidat trouvé"
-      header={header}
-      rowClassName={(r) => {
-        if (r.decision === 1) return "accepted-row";
-        if (r.decision === 2) return "rejected-row";
-        return "";
-      }}
-    >
-      <Column
-        field="dosNumber"
-        header="N° dossier"
-        sortable
-        headerStyle={{ minWidth: "6rem" }}
-      />
-      <Column
-        field="firstname"
-        header="Prénom(s)"
-        sortable
-        headerStyle={{ minWidth: "12rem" }}
-      />
-      <Column
-        field="lastname"
-        header="Nom"
-        sortable
-        headerStyle={{ minWidth: "10rem" }}
-      />
-      <Column
-        field="date_birth"
-        header="Date naiss."
-        body={dateBody}
-        sortable
-        headerStyle={{ minWidth: "8rem" }}
-      />
-      <Column
-        field="place_birth"
-        header="Lieu naiss."
-        sortable
-        headerStyle={{ minWidth: "10rem" }}
-      />
-      <Column
-        field="gender"
-        header="Sexe"
-        sortable
-        headerStyle={{ minWidth: "4rem" }}
-      />
-      <Column
-        field="decision"
-        header="Statut"
-        body={(r) => <StatusBadge decision={r.decision} />}
-        sortable
-        headerStyle={{ minWidth: "8rem" }}
-      />
-      <Column
-        body={actionBody}
-        header="Actions"
-        headerStyle={{ minWidth: "8rem" }}
-        style={{ textAlign: "center" }}
-      />
-    </DataTable>
+    <div className="candidature-table-wrapper">
+      <div className="table-header">
+        <div className="table-title">
+          <div className="table-title-icon">
+            <i className="pi pi-list"></i>
+          </div>
+          <div>
+            <h2>Liste des candidats</h2>
+            {!loading && (
+              <p>
+                {candidats.length} candidat{candidats.length > 1 ? "s" : ""} au
+                total
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="table-search">
+          <i className="pi pi-search"></i>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <DataTable
+        value={candidats}
+        loading={loading}
+        paginator
+        rows={10}
+        rowsPerPageOptions={[10, 20, 50]}
+        className="custom-datatable"
+        globalFilter={globalFilter}
+        emptyMessage="Aucun candidat trouvé"
+        responsiveLayout="scroll"
+        sortMode="multiple"
+        removableSort
+        rowClassName={(r) => {
+          if (r.decision === 1) return "accepted-row";
+          if (r.decision === 2) return "rejected-row";
+          return "";
+        }}
+      >
+        <Column
+          field="dosNumber"
+          header="N° dossier"
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          field="firstname"
+          header="Prénom(s)"
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "12rem" }}
+        />
+        <Column
+          field="lastname"
+          header="Nom"
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "10rem" }}
+        />
+        <Column
+          field="date_birth"
+          header="Date naiss."
+          body={dateBody}
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          field="place_birth"
+          header="Lieu naiss."
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "10rem" }}
+        />
+        <Column
+          field="gender"
+          header="Sexe"
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "5rem" }}
+        />
+        <Column
+          field="decision"
+          header="Statut"
+          body={(r) => <StatusBadge decision={r.decision} />}
+          sortable
+          headerClassName="table-header-cell"
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          body={actionBody}
+          header="Actions"
+          headerClassName="table-header-cell"
+          style={{ minWidth: "10rem", textAlign: "center" }}
+        />
+      </DataTable>
+    </div>
   );
 };
