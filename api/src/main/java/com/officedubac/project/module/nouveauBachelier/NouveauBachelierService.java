@@ -40,4 +40,5 @@ public interface NouveauBachelierService {
     Optional<NouveauBachelierResponse> getBachelierByNumeroTable(String numeroTable) throws BusinessResourceException;
     // ✅ Liste des jurys (collection "jury") qui n'ont encore AUCUN bachelier chargé dans "nouveauBachelier"
     List<Jury> findJurysNonCharges(Boolean technique) throws BusinessResourceException;
+    List<Jury> findJuryNumerosAvec2emeGroupe()           throws BusinessResourceException;
 }

@@ -11,6 +11,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.bson.Document;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -696,5 +699,34 @@ public class NouveauBachelierServiceImp implements NouveauBachelierService {
 
         log.info("=== executerUpsertBatch() - Fin — résultats répartis sur {} fichier(s) ===", resultats.size());
         return resultats;
+    }
+    @Override
+    public List<Jury> findJuryNumerosAvec2emeGroupe() {
+        log.info("=== findJuryNumerosAvec2emeGroupe() - Début ===");
+
+        // 1. Numéros de jury distincts ayant au moins un résultat "2ème groupe"
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("resultat").is("Autorisé(s) au 2ème groupe d'épreuves")),
+                Aggregation.group("jury.numero")
+        );
+        AggregationResults<Document> results = mongoTemplate.aggregate(agg, "nouveauBachelier", Document.class);
+
+        List<String> numeros = results.getMappedResults().stream()
+                .map(d -> d.getString("_id"))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        log.info("Numéros de jury avec 2ème groupe: {}", numeros.size());
+
+        if (numeros.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. Récupérer les jurys complets (avec centre/ville/academie déjà dans Jury.centre)
+        List<Jury> jurys = mongoTemplate.find(
+                Query.query(Criteria.where("numero").in(numeros)), Jury.class
+        );
+
+        log.info("=== findJuryNumerosAvec2emeGroupe() - Fin, {} jury(s) ===", jurys.size());
+        return jurys;
     }
 }
