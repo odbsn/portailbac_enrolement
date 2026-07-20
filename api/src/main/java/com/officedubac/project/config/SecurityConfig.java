@@ -106,6 +106,7 @@ public class SecurityConfig {
 //                        .requestMatchers("/api/v1/candidats/**").permitAll()
                         .requestMatchers("/api/v1/jours/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/heures/**").hasAnyAuthority(Role.ADMIN.name())
+                                .requestMatchers("/api/v1/dashboard/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/convocations/**").permitAll()
                         .requestMatchers("/api/v1/convocationMassive/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/convocations/batch/**").hasAnyAuthority(Role.ADMIN.name())
