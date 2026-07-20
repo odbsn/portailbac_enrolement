@@ -239,6 +239,11 @@
 			<version>0.2.0</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.github.pjfanning</groupId>
+			<artifactId>excel-streaming-reader</artifactId>
+			<version>4.3.1</version>
+		</dependency>
 
 		<!-- Jakarta Servlet API (nécessaire car packaging WAR) -->
 		<dependency>
