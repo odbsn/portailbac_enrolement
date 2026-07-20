@@ -168,5 +168,11 @@ public class NouveauBachelierResource {
         List<Jury> response = service.findJurysNonCharges(technique);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+    // ✅ NOUVEAU : jurys ayant au moins un résultat "Autorisé(s) au 2ème groupe d'épreuves"
+    @GetMapping("/jurys-2eme-groupe")
+    public ResponseEntity<List<Jury>> jurysAvec2emeGroupe() {
+        List<Jury> response = service.findJuryNumerosAvec2emeGroupe();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
 

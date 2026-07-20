@@ -1,5 +1,6 @@
 package com.officedubac.project.module.candidatFinis;
 import com.officedubac.project.models.Etablissement;
+import com.officedubac.project.models.InspectionAcademie;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisRequest;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisResponse;
 import com.officedubac.project.module.candidatFinis.dto.PageResponse;
@@ -64,4 +65,11 @@ public interface CandidatFinisService {
 //            String dateNaissance
 //    );
 Mono<String> regenerateConvocation(String numeroTable);
+    ByteArrayInputStream exportAllCandidatsToExcelByInspectionAcademie();
+    InspectionAcademie getInspectionAcademieUtilisateurConnecte();
+    PageResponse<CandidatFinisResponse> getAllByInspectionAcademieConnectee(Pageable pageable);
+    PageResponse<CandidatFinisResponse> getWithFiltersByInspectionAcademieConnectee(
+            String keyword, String serie, String jury, String typeCandidat,
+            String statutResultat, String sexe, String nationalite,
+            String etablissementCode, Pageable pageable);
 }

@@ -18,4 +18,6 @@ public class Jury
     private String numero;
     private String name;
     private boolean technique;
+    private Etablissement centre;
+
 }

@@ -20,6 +20,14 @@ public class CandidatExcelSimpleDto {
     @ColumnWidth(10)
     private String numeroTable;
 
+    @ExcelProperty("Résultat")
+    @ColumnWidth(35)
+    private String resultat;
+
+    @ExcelProperty("Mention")
+    @ColumnWidth(12)
+    private String mention;
+
     @ExcelProperty("Série")
     @ColumnWidth(10)
     private String serie;
@@ -60,4 +68,5 @@ public class CandidatExcelSimpleDto {
     @ExcelProperty("Matière(s) Facultatives")
     @ColumnWidth(25)
     private String matieresFacultatives;
+
 }

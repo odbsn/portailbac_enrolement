@@ -19,6 +19,7 @@ public class Etablissement
     private String id;
     private String name;
     private String code;
+    String codeNormalise;
     private String sigle;
     private int capacity;
     private int nb_of_jury;

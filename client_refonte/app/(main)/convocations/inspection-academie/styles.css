@@ -1,0 +1,18 @@
+/* Barre de progression indéterminée pour l'export */
+.export-indeterminate-bar {
+  position: absolute;
+  height: 10px;
+  width: 40%;
+  background-color: #3b82f6;
+  border-radius: 9999px;
+  animation: export-indeterminate-anim 1.2s infinite ease-in-out;
+}
+
+@keyframes export-indeterminate-anim {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}

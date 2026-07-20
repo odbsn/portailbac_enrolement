@@ -4,6 +4,7 @@ import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.exception.DuplicateResourceException;
 import com.officedubac.project.exception.ResourceNotFoundException;
 import com.officedubac.project.models.Etablissement;
+import com.officedubac.project.models.InspectionAcademie;
 import com.officedubac.project.models.User;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisRequest;
 import com.officedubac.project.module.candidatFinis.dto.CandidatFinisResponse;
@@ -14,6 +15,7 @@ import com.officedubac.project.module.epreuve.Epreuve;
 import com.officedubac.project.module.epreuve.EpreuveMapper;
 import com.officedubac.project.module.epreuve.dto.EpreuveResponse;
 import com.officedubac.project.module.jour.Jour;
+import com.officedubac.project.module.nouveauBachelier.NouveauBachelier;
 import com.officedubac.project.repository.EtablissementRepository;
 import com.officedubac.project.services.AuthenticationService;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -470,6 +473,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
         Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
         Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
+        enrichWithResultats(responsePage.getContent());
 
         return toPageResponse(responsePage);
     }
@@ -579,7 +583,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
         Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
         Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
-
+        enrichWithResultats(responsePage.getContent());
         return toPageResponse(responsePage);
     }
 
@@ -633,7 +637,6 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         Query query = new Query();
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
-        // ===== AJOUT DU TRI =====
         Sort sort = Sort.by("serie").ascending()
                 .and(Sort.by("nom").ascending())
                 .and(Sort.by("prenoms").ascending());
@@ -644,7 +647,9 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         log.info("📊 {} candidats trouvés pour l'export (triés par série, nom, prénoms)", candidats.size());
 
-        List<CandidatFinisResponse> responses = toResponsesWithEpreuves(candidats);
+        // ✅ Plus d'épreuves ici non plus
+        List<CandidatFinisResponse> responses = toResponsesWithoutEpreuves(candidats);
+        enrichWithResultats(responses);
 
         return candidatExportService.generateCandidatsExcel(responses);
     }
@@ -687,13 +692,18 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         // ⚡ OPTIMISATION (important)
         List<EpreuveResponse> epreuves = getEpreuvesBySerieOrdered(serie);
 
-        return candidats.stream()
+        List<CandidatFinisResponse> responses = candidats.stream()
                 .map(candidat -> {
                     CandidatFinisResponse response = candidatFinisMapper.toResponse(candidat);
                     response.setEpreuves(epreuves);
                     return response;
                 })
                 .toList();
+
+        // ===== AJOUT : enrichissement avec les résultats =====
+        enrichWithResultats(responses);
+
+        return responses;
     }
     @Override
     public List<CandidatFinisResponse> getAllByUtilisateurConnecte() {
@@ -704,7 +714,6 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         Query query = new Query();
 
-        // ✅ Conversion en ObjectId
         ObjectId objectId;
         try {
             objectId = new ObjectId(etablissement.getId());
@@ -713,18 +722,81 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             return List.of();
         }
 
-        // ✅ BON champ Mongo
         query.addCriteria(Criteria.where("etablissement._id").is(objectId));
-
 
         List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
 
         log.info("✅ {} candidats récupérés", candidats.size());
 
-
-        return candidats.stream()
+        List<CandidatFinisResponse> responses = candidats.stream()
                 .map(candidatFinisMapper::toResponse)
                 .toList();
+
+        // ===== ENRICHISSEMENT DES RÉSULTATS (1 SEULE REQUÊTE, PAS DE N+1) =====
+        enrichWithResultats(responses);
+
+        return responses;
+    }
+
+    /**
+     * Enrichit en masse les réponses avec resultat/mention issus de NouveauBachelier.
+     * ⚡ Performance : une seule requête MongoDB avec $in, quel que soit le nombre de candidats.
+     */
+    private void enrichWithResultats(List<CandidatFinisResponse> responses) {
+        if (responses.isEmpty()) {
+            return;
+        }
+        // 1. Récupérer les numeroTable uniques et nettoyés
+        List<String> numerosTable = responses.stream()
+                .map(CandidatFinisResponse::getNumeroTable)
+                .filter(StringUtils::hasText)
+                .map(nt -> nt.trim().replaceAll("\\s+", ""))
+                .distinct()
+                .toList();
+
+        if (numerosTable.isEmpty()) {
+            return;
+        }
+        // 2. Une seule requête avec $in + projection (limite les champs transférés)
+        Query query = Query.query(Criteria.where("numeroTable").in(numerosTable));
+        query.fields()
+                .include("numeroTable")
+                .include("resultat")
+                .include("mention");
+
+        List<NouveauBachelier> bacheliers = mongoTemplate.find(query, NouveauBachelier.class);
+
+        log.info("📊 {} résultats trouvés sur {} candidats", bacheliers.size(), numerosTable.size());
+
+        // 3. Map pour lookup O(1)
+        Map<String, NouveauBachelier> bachelierByNumeroTable = bacheliers.stream()
+                .collect(Collectors.toMap(
+                        b -> b.getNumeroTable().trim().replaceAll("\\s+", ""),
+                        b -> b,
+                        (existing, duplicate) -> existing // sécurité anti-doublon
+                ));
+
+        // 4. Enrichissement en mémoire, sans requête supplémentaire
+        for (CandidatFinisResponse response : responses) {
+            if (!StringUtils.hasText(response.getNumeroTable())) {
+                continue;
+            }
+
+            String cleaned = response.getNumeroTable().trim().replaceAll("\\s+", "");
+            NouveauBachelier bachelier = bachelierByNumeroTable.get(cleaned);
+
+            if (bachelier == null) {
+                // Résultat non encore disponible pour ce candidat
+                continue;
+            }
+
+            String resultat = bachelier.getResultat();
+            response.setResultat(resultat);
+
+            // Même règle métier que getBachelierByNumeroTable : mention seulement si Admis(e)
+            boolean admis = resultat != null && (resultat.contains("Admis") || resultat.contains("ADMIS"));
+            response.setMention(admis ? bachelier.getMention() : null);
+        }
     }
     @Override
     public Jour getJourEPS() {
@@ -842,5 +914,117 @@ public Etablissement getEtablissementUtilisateurConnecte() {
                                 }
                             });
                 });
+    }
+    // ==================== MÉTHODES AVEC FILTRE INSPECTION ACADÉMIE ====================
+
+    @Override
+    public InspectionAcademie getInspectionAcademieUtilisateurConnecte() {
+        User appUser = authService.getCurrentUser();
+
+        if (appUser == null) {
+            throw new BusinessResourceException("unauthorized",
+                    "Utilisateur non connecté", HttpStatus.UNAUTHORIZED);
+        }
+
+        log.info("Utilisateur connecté: {}", appUser.getLogin());
+
+        InspectionAcademie inspectionAcademie = null;
+
+        if (appUser.getActeur() != null) {
+            inspectionAcademie = appUser.getActeur().getInspectionAcademie();
+            if (inspectionAcademie != null) {
+                log.info("Inspection Académie récupérée: {} ({})",
+                        inspectionAcademie.getName(), inspectionAcademie.getId());
+            } else {
+                log.warn("L'acteur n'a pas d'inspection académie associée");
+            }
+        } else {
+            log.warn("L'utilisateur n'a pas d'acteur associé");
+        }
+
+        if (inspectionAcademie == null) {
+            throw new BusinessResourceException("no-inspection-academie",
+                    "Aucune inspection académie associée à l'utilisateur: " + appUser.getLogin(),
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        return inspectionAcademie;
+    }
+
+    @Override
+    public PageResponse<CandidatFinisResponse> getAllByInspectionAcademieConnectee(Pageable pageable) {
+        log.info("Fetching all candidats of connected user's inspection académie");
+        return getWithFiltersByInspectionAcademieConnectee(
+                null, null, null, null, null, null, null, null, pageable);
+    }
+
+    @Override
+    public PageResponse<CandidatFinisResponse> getWithFiltersByInspectionAcademieConnectee(
+            String keyword,
+            String serie,
+            String jury,
+            String typeCandidat,
+            String statutResultat,
+            String sexe,
+            String nationalite,
+            String etablissementCode,
+            Pageable pageable) {
+
+        log.info("Fetching candidats of connected user's inspection académie with filters");
+
+        InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
+
+        Query query = buildFilterQuery(keyword, serie, jury, null, typeCandidat,
+                statutResultat, sexe, nationalite, etablissementCode);
+        query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
+                .is(new ObjectId(inspectionAcademie.getId())));
+
+        long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
+        query.with(pageable);
+
+        List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
+        Page<CandidatFinis> page = new PageImpl<>(candidats, pageable, total);
+        Page<CandidatFinisResponse> responsePage = toPageWithEpreuves(page);
+        enrichWithResultats(responsePage.getContent());
+
+        return toPageResponse(responsePage);
+    }
+
+    @Override
+    public ByteArrayInputStream exportAllCandidatsToExcelByInspectionAcademie() {
+        log.info("📊 Export de TOUS les candidats de l'inspection académie vers Excel");
+
+        InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
+                .is(new ObjectId(inspectionAcademie.getId())));
+
+        Sort sort = Sort.by("etablissement.name").ascending()
+                .and(Sort.by("serie").ascending())
+                .and(Sort.by("nom").ascending())
+                .and(Sort.by("prenoms").ascending());
+
+        query.with(sort);
+
+        List<CandidatFinis> candidats = mongoTemplate.find(query, CandidatFinis.class, COLLECTION_NAME);
+
+        log.info("📊 {} candidats trouvés pour l'export", candidats.size());
+
+        // ✅ Plus d'épreuves = plus de N+1
+        List<CandidatFinisResponse> responses = toResponsesWithoutEpreuves(candidats);
+        enrichWithResultats(responses);
+
+        return candidatExportService.generateCandidatsExcel(responses);
+    }
+    /**
+     * Convertit une liste de candidats en réponses SANS les épreuves.
+     * Utilisé pour l'export Excel où les épreuves ne sont pas nécessaires.
+     * ⚡ Évite le N+1 sur getEpreuvesBySerieOrdered.
+     */
+    private List<CandidatFinisResponse> toResponsesWithoutEpreuves(List<CandidatFinis> candidats) {
+        return candidats.stream()
+                .map(candidatFinisMapper::toResponse)
+                .collect(Collectors.toList());
     }
 }

@@ -14,4 +14,10 @@ public interface CandidatReactiveRepository extends ReactiveMongoRepository<Cand
             String dateNaissance,
             String codeEtab
     );
+    @Query("{ 'numeroTable': ?0, 'dateNaissance': ?1, 'etablissement.codeNormalise': ?2 }")
+    Mono<ConvocationProjection> findByNumeroTableAndDateNaissanceAndEtablissementCodeNormalise(
+            String numeroTable,
+            String dateNaissance,
+            String codeEtabNormalise
+    );
 }
