@@ -18,11 +18,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImportController {
 
     private final ImportBacheliersService importBacheliersService;
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/load")
     public ResponseEntity<ImportLog> importer(
             @RequestParam("fichier") MultipartFile fichier,
             @RequestParam("annee") int annee,
-            @RequestParam(value = "remplacer", defaultValue = "false") boolean remplacer) {
+            @RequestParam(value = "remplacer", defaultValue = "false") boolean remplacer)
+    {
 
         if (fichier.isEmpty()) {
             throw new IllegalArgumentException("Le fichier est vide");

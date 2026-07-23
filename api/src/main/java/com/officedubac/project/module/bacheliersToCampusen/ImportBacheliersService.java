@@ -78,11 +78,12 @@ public class ImportBacheliersService {
         COMMON_HEADERS.put("moy. déf.", BacheliersToCampusen::setMoyenneDefinitive);
     }
 
-    public ImportLog importer(MultipartFile fichier, int annee, boolean remplacer) {
+    public ImportLog importer(MultipartFile fichier, int annee, boolean remplacer)
+    {
         if (importLogRepository.findByAnnee(annee).isPresent() || candidatRepository.existsByAnnee(annee)) {
-            if (!remplacer) {
-                throw new ConflictException("L'année " + annee
-                        + " a déjà été importée (import one-shot). Relancez avec remplacer=true pour réimporter.");
+            if (!remplacer)
+            {
+                throw new ConflictException("L'année " + annee + " a déjà été importée (import one-shot). Relancez avec remplacer=true pour réimporter.");
             }
             long supprimes = candidatRepository.deleteByAnnee(annee);
             importLogRepository.deleteByAnnee(annee);
