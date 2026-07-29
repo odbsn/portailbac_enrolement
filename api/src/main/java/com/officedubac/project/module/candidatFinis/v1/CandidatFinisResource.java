@@ -481,4 +481,62 @@ public class CandidatFinisResource {
                     return Mono.just(ResponseEntity.status(status).body(response));
                 });
     }
+    // ==================== MÉTHODES POUR INSPECTION ACADÉMIE CONNECTÉE ====================
+    @GetMapping("/inspection-academie")
+    @Operation(summary = "Mes candidats (Inspection Académie)", description = "Récupère les candidats de tous les établissements rattachés à mon inspection académie")
+    public ResponseEntity<PageResponse<CandidatFinisResponse>> getAllByInspectionAcademieConnectee(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,
+            @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
+
+        log.info("GET /api/v1/candidats/inspection-academie - Get candidats by inspection académie");
+
+        PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByInspectionAcademieConnectee(
+                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/inspection-academie/filters")
+    @Operation(summary = "Mes candidats avec filtres (Inspection Académie)")
+    public ResponseEntity<PageResponse<CandidatFinisResponse>> getWithFiltersByInspectionAcademieConnectee(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String serie,
+            @RequestParam(required = false) String jury,
+            @RequestParam(required = false) String typeCandidat,
+            @RequestParam(required = false) String statutResultat,
+            @RequestParam(required = false) String sexe,
+            @RequestParam(required = false) String nationalite,
+            @RequestParam(required = false) String etablissementCode,
+            @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
+
+        log.info("GET /api/v1/candidats/inspection-academie/filters - Get candidats by inspection académie with filters");
+
+        PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByInspectionAcademieConnectee(
+                keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite,
+                etablissementCode, pageable);
+        return ResponseEntity.ok(responses);
+    }
+    @GetMapping("/inspection-academie/export")
+    public ResponseEntity<byte[]> exportCandidatsByInspectionAcademie() throws IOException {
+        log.info("GET /api/v1/candidats/inspection-academie/export - Export tous les candidats de mon inspection académie");
+
+        ByteArrayInputStream excelFile = candidatFinisService.exportAllCandidatsToExcelByInspectionAcademie();
+        byte[] excelBytes = excelFile.readAllBytes();
+
+        String filename = String.format("candidats_inspection_academie_%s.xlsx",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentLength(excelBytes.length)
+                .body(excelBytes);
+    }
 }

@@ -108,11 +108,11 @@ public class CandidatExportService {
      * Récupère le centre d'écrit (particulier ou normal)
      */
     private String getCentreEcrit(CandidatFinisResponse c) {
-        if (c.getCentreEcritParticulier() != null && !c.getCentreEcritParticulier().isEmpty()) {
-            return c.getCentreEcritParticulier();
-        }
+//        if (c.getCentreEcritParticulier() != null && !c.getCentreEcritParticulier().isEmpty()) {
+//            return c.getCentreEcritParticulier();
+//        }
         if (c.getCentreEcrit() != null) {
-            return c.getCentreEcrit().getCode();
+            return c.getCentreEcrit().getName();
         }
         return "";
     }
