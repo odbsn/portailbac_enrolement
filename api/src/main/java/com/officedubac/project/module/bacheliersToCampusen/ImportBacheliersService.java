@@ -37,6 +37,7 @@ public class ImportBacheliersService {
         COMMON_HEADERS.put("date nais.", BacheliersToCampusen::setDateNaissance);
         COMMON_HEADERS.put("année nais.", BacheliersToCampusen::setAnneeNaissance);
         COMMON_HEADERS.put("lieu de naissance", BacheliersToCampusen::setLieuNaissance);
+        COMMON_HEADERS.put("telephone", BacheliersToCampusen::setTelephone);
         COMMON_HEADERS.put("sexe", BacheliersToCampusen::setSexe);
         COMMON_HEADERS.put("série", (c, v) -> { /* deja portee par le nom de la feuille */ });
         COMMON_HEADERS.put("ets. de provenance", BacheliersToCampusen::setEtsProvenance);
