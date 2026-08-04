@@ -539,7 +539,7 @@ export default function EspaceCandidat() {
                           {resultatBac.numeroDiplome && (
                             <div className="resultat-diplome">
                               <i className="pi pi-id-card"></i>
-                              N° Diplôme : {resultatBac.numeroDiplome}
+                              Votre numéro de diplôme : {resultatBac.numeroDiplome}
                             </div>
                           )}
                         </div>
@@ -981,14 +981,18 @@ export default function EspaceCandidat() {
         .resultat-diplome {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 0.5rem 1.25rem;
+          gap: 4px;
+          padding: 0.6rem 1.5rem;
           border-radius: 50px;
-          font-size: 0.9rem;
-          font-weight: 600;
+          font-size: 1.1rem;
+          font-weight: 700;
           margin-top: 0.75rem;
           background: #e6f1fb;
           color: #1565c0;
+        }
+
+        .resultat-diplome i {
+          font-size: 1em;
         }
 
         @media (max-width: 900px) {
