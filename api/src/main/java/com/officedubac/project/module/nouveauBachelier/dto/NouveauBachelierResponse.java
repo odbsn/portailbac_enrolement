@@ -20,6 +20,7 @@ public class NouveauBachelierResponse {
     private String prenoms;
     private String nom;
     private String numeroTable;
+    private String numeroDiplome;
     private String resultat;
     private String mention;
     private Jury jury;

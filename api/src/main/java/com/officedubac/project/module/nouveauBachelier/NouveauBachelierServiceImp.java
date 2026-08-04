@@ -26,11 +26,13 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,6 +52,7 @@ public class NouveauBachelierServiceImp implements NouveauBachelierService {
     private final ReactiveMongoTemplate reactiveMongoTemplate;
     private final MongoTemplate mongoTemplate;
     private final NouveauBachelierDao dao;
+    private final DiplomeImportJobStore diplomeImportJobStore;
 
     @Override
     public List<NouveauBachelierResponse> all() throws BusinessResourceException {
@@ -728,5 +731,255 @@ public class NouveauBachelierServiceImp implements NouveauBachelierService {
 
         log.info("=== findJuryNumerosAvec2emeGroupe() - Fin, {} jury(s) ===", jurys.size());
         return jurys;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ✅ MISE À JOUR numeroDiplome = "100/N° Table/2026/N° Academie"
+    //    Nécessite la colonne "N° Academie" dans le fichier Excel — les fichiers
+    //    qui ne l'ont pas encore (anciens exports) sont ignorés avec un warning.
+    //    Ne met à jour que les bacheliers déjà présents dans la collection
+    //    (aucune création).
+    //    Traitement optimisé pour ~100k lignes : parsing des fichiers en parallèle,
+    //    une seule requête Mongo d'existence et un seul bulk write pour l'ensemble
+    //    des fichiers (au lieu d'un aller-retour par fichier).
+    // ════════════════════════════════════════════════════════════════════════
+    private static String anneeDiplomeCourante() {
+        return String.valueOf(java.time.Year.now().getValue());
+    }
+
+    private record DiplomeRow(String numeroTable, String numeroAcademie, String fichierSource) {}
+
+    private record ParsedDiplomeFile(
+            boolean fichierExploitable,
+            int totalLignes,
+            List<DiplomeRow> rows,
+            List<String> warnings
+    ) {}
+
+    private ParsedDiplomeFile parseNumeroDiplomeExcel(InputStream inputStream, String nomFichier) throws IOException {
+        log.info("=== parseNumeroDiplomeExcel() - Début parsing: {} ===", nomFichier);
+        List<String> warnings = new ArrayList<>();
+        List<DiplomeRow> rows = new ArrayList<>();
+
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            int totalLignes = Math.max(sheet.getPhysicalNumberOfRows() - 1, 0);
+            Row header = sheet.getRow(0);
+            if (header == null) {
+                warnings.add("❌ Ligne d'en-tête absente — fichier ignoré.");
+                return new ParsedDiplomeFile(false, totalLignes, rows, warnings);
+            }
+
+            int numeroTableIdx = -1;
+            int numeroAcademieIdx = -1;
+            for (Cell cell : header) {
+                String label = getCellValue(cell).trim().replaceAll("\\s+", " ");
+                if (label.equalsIgnoreCase("N° Table")) {
+                    numeroTableIdx = cell.getColumnIndex();
+                } else if (label.equalsIgnoreCase("N° Academie")) {
+                    numeroAcademieIdx = cell.getColumnIndex();
+                }
+            }
+
+            if (numeroAcademieIdx == -1) {
+                log.warn("[{}] Colonne \"N° Academie\" absente — fichier ignoré", nomFichier);
+                return new ParsedDiplomeFile(false, totalLignes, rows, warnings);
+            }
+            if (numeroTableIdx == -1) {
+                warnings.add("❌ Colonne \"N° Table\" introuvable — fichier ignoré.");
+                log.warn("[{}] Colonne \"N° Table\" introuvable — fichier ignoré", nomFichier);
+                return new ParsedDiplomeFile(false, totalLignes, rows, warnings);
+            }
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
+
+                String numeroTable = getCellValue(row.getCell(numeroTableIdx));
+                String numeroAcademie = getCellValue(row.getCell(numeroAcademieIdx));
+
+                if (numeroTable == null || numeroTable.isBlank()) {
+                    continue;
+                }
+                if (numeroAcademie == null || numeroAcademie.isBlank()) {
+                    warnings.add("⚠️ Ligne " + (row.getRowNum() + 1) + " [Table: " + numeroTable + "]: N° Academie vide, ignorée.");
+                    continue;
+                }
+                rows.add(new DiplomeRow(numeroTable.trim(), numeroAcademie.trim(), nomFichier));
+            }
+
+            log.info("[{}] parseNumeroDiplomeExcel() - Fin. {} lignes exploitables sur {}",
+                    nomFichier, rows.size(), totalLignes);
+            return new ParsedDiplomeFile(true, totalLignes, rows, warnings);
+        } catch (Exception e) {
+            log.error("[{}] Erreur lors du parsing Excel (numeroDiplome): {}", nomFichier, e.getMessage(), e);
+            throw new IOException("Erreur de parsing Excel [" + nomFichier + "]: " + e.getMessage(), e);
+        }
+    }
+
+    // ── Cœur du traitement : parsing parallèle + 1 requête d'existence + 1 bulk write ──
+    private List<DiplomeImportResult> executerImportNumeroDiplome(Map<String, byte[]> fichiers) {
+        long t0 = System.currentTimeMillis();
+        log.info("=== executerImportNumeroDiplome() - DÉBUT - {} fichier(s) ===", fichiers.size());
+
+        // ── a. Parsing en parallèle ──
+        ExecutorService executor = Executors.newFixedThreadPool(
+                Math.min(fichiers.size(), Runtime.getRuntime().availableProcessors())
+        );
+        Map<String, ParsedDiplomeFile> parsedParFichier = new LinkedHashMap<>();
+        try {
+            Map<String, CompletableFuture<ParsedDiplomeFile>> futures = new LinkedHashMap<>();
+            for (Map.Entry<String, byte[]> entry : fichiers.entrySet()) {
+                String nomFichier = entry.getKey();
+                byte[] contenu = entry.getValue();
+                futures.put(nomFichier, CompletableFuture.supplyAsync(() -> {
+                    try (InputStream is = new ByteArrayInputStream(contenu)) {
+                        return parseNumeroDiplomeExcel(is, nomFichier);
+                    } catch (IOException e) {
+                        log.error("Erreur lecture fichier {}: {}", nomFichier, e.getMessage(), e);
+                        return new ParsedDiplomeFile(false, 0, new ArrayList<>(),
+                                new ArrayList<>(List.of("❌ Erreur de lecture: " + e.getMessage())));
+                    }
+                }, executor));
+            }
+            for (Map.Entry<String, CompletableFuture<ParsedDiplomeFile>> entry : futures.entrySet()) {
+                parsedParFichier.put(entry.getKey(), entry.getValue().join());
+            }
+        } finally {
+            executor.shutdown();
+        }
+
+        long tParsing = System.currentTimeMillis();
+        log.info("Parsing parallèle terminé en {} ms — {} fichier(s)", (tParsing - t0), fichiers.size());
+
+        // ── b. Séparer fichiers exploitables / ignorés, fusionner toutes les lignes ──
+        Map<String, DiplomeImportResult> resultatsParFichier = new LinkedHashMap<>();
+        List<DiplomeRow> toutesLesLignes = new ArrayList<>();
+
+        for (Map.Entry<String, ParsedDiplomeFile> entry : parsedParFichier.entrySet()) {
+            String nomFichier = entry.getKey();
+            ParsedDiplomeFile parsed = entry.getValue();
+            if (!parsed.fichierExploitable()) {
+                DiplomeImportResult result = DiplomeImportResult.ignoreSansColonneAcademie(nomFichier, parsed.totalLignes());
+                result.getWarnings().addAll(parsed.warnings());
+                resultatsParFichier.put(nomFichier, result);
+            } else {
+                toutesLesLignes.addAll(parsed.rows());
+            }
+        }
+
+        if (!toutesLesLignes.isEmpty()) {
+            // ── c. UNE SEULE requête Mongo pour connaître les numéros de table existants ──
+            Set<String> numeroTables = toutesLesLignes.stream()
+                    .map(DiplomeRow::numeroTable)
+                    .collect(Collectors.toSet());
+
+            Set<String> numerosExistants = new HashSet<>(mongoTemplate.findDistinct(
+                    Query.query(Criteria.where("numeroTable").in(numeroTables)),
+                    "numeroTable",
+                    NouveauBachelier.class,
+                    String.class));
+
+            long tExistants = System.currentTimeMillis();
+            log.info("Vérification existence terminée en {} ms — {} numéro(s) unique(s), {} existant(s)",
+                    (tExistants - tParsing), numeroTables.size(), numerosExistants.size());
+
+            // ── d. UN SEUL bulk write pour toutes les lignes de tous les fichiers ──
+            BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, NouveauBachelier.class);
+            Map<String, int[]> compteursParFichier = new HashMap<>(); // [misAJour, nonTrouves]
+            Set<String> dejaTraites = new HashSet<>();
+            int operationsEnAttente = 0;
+
+            for (DiplomeRow row : toutesLesLignes) {
+                int[] compteurs = compteursParFichier.computeIfAbsent(row.fichierSource(), k -> new int[2]);
+
+                if (!numerosExistants.contains(row.numeroTable())) {
+                    compteurs[1]++; // nonTrouves
+                    continue;
+                }
+                if (!dejaTraites.add(row.numeroTable())) {
+                    continue; // doublon (même numeroTable rencontré plusieurs fois) déjà pris en compte
+                }
+
+                String numeroDiplome = "100/" + row.numeroTable() + "/" + anneeDiplomeCourante() + "/" + row.numeroAcademie();
+                Query query = Query.query(Criteria.where("numeroTable").is(row.numeroTable()));
+                Update update = new Update().set("numeroDiplome", numeroDiplome);
+                bulkOps.updateOne(query, update);
+                operationsEnAttente++;
+                compteurs[0]++; // misAJour
+            }
+
+            if (operationsEnAttente > 0) {
+                log.info("Exécution du bulk update fusionné: {} opération(s)", operationsEnAttente);
+                bulkOps.execute();
+            }
+
+            long tBulk = System.currentTimeMillis();
+            log.info("Bulk update terminé en {} ms (total: {} ms)", (tBulk - tExistants), (tBulk - t0));
+
+            for (Map.Entry<String, ParsedDiplomeFile> entry : parsedParFichier.entrySet()) {
+                String nomFichier = entry.getKey();
+                ParsedDiplomeFile parsed = entry.getValue();
+                if (!parsed.fichierExploitable()) continue;
+
+                int[] c = compteursParFichier.getOrDefault(nomFichier, new int[2]);
+                resultatsParFichier.put(nomFichier, DiplomeImportResult.builder()
+                        .fichier(nomFichier)
+                        .total(parsed.totalLignes())
+                        .misAJour(c[0])
+                        .nonTrouves(c[1])
+                        .colonneAcademieAbsente(0)
+                        .warnings(parsed.warnings())
+                        .build());
+            }
+        }
+
+        // ── e. Résultats dans l'ordre des fichiers fournis ──
+        List<DiplomeImportResult> resultats = fichiers.keySet().stream()
+                .map(resultatsParFichier::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        log.info("=== executerImportNumeroDiplome() - FIN — {} ms total ===", (System.currentTimeMillis() - t0));
+        resultats.forEach(r -> log.info(r.toSummary()));
+        return resultats;
+    }
+
+    // Version synchrone (bloquante) — réservée aux petits volumes / tests, sinon risque de timeout HTTP.
+    @Override
+    public List<DiplomeImportResult> importerNumeroDiplomeDepuisExcel(List<MultipartFile> files) throws IOException {
+        log.info("=== importerNumeroDiplomeDepuisExcel() (synchrone) - {} fichier(s) ===", files.size());
+        Map<String, byte[]> fichiers = new LinkedHashMap<>();
+        for (MultipartFile file : files) {
+            String nomFichier = file.getOriginalFilename() != null ? file.getOriginalFilename() : "fichier_" + System.nanoTime();
+            fichiers.put(nomFichier, file.getBytes());
+        }
+        return executerImportNumeroDiplome(fichiers);
+    }
+
+    // ── Version asynchrone : le job est créé et son id retourné immédiatement,
+    //    le traitement se fait en tâche de fond (pool "threadPoolTaskExecutor", cf. AsyncConfig) ──
+    @Override
+    public String creerJobImportNumeroDiplome(int totalFichiers) {
+        return diplomeImportJobStore.creer(totalFichiers);
+    }
+
+    @Async("threadPoolTaskExecutor")
+    @Override
+    public void traiterImportNumeroDiplomeAsync(String jobId, Map<String, byte[]> fichiers) {
+        log.info("=== traiterImportNumeroDiplomeAsync() - job {} - {} fichier(s) ===", jobId, fichiers.size());
+        diplomeImportJobStore.demarrer(jobId);
+        try {
+            List<DiplomeImportResult> resultats = executerImportNumeroDiplome(fichiers);
+            diplomeImportJobStore.terminer(jobId, resultats);
+            log.info("=== traiterImportNumeroDiplomeAsync() - job {} terminé ===", jobId);
+        } catch (Exception e) {
+            log.error("Erreur lors du traitement asynchrone du job {}: {}", jobId, e.getMessage(), e);
+            diplomeImportJobStore.echouer(jobId, e.getMessage());
+        }
+    }
+
+    @Override
+    public Optional<DiplomeImportJob> getJobImportNumeroDiplome(String jobId) {
+        return diplomeImportJobStore.get(jobId);
     }
 }

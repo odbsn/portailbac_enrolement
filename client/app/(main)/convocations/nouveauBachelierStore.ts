@@ -37,6 +37,7 @@ export interface NouveauBachelierResponse {
   prenoms: string;
   nom: string;
   numeroTable: string;
+  numeroDiplome?: string;
   resultat: string;
   mention: string;
   jury: Jury;
@@ -64,6 +65,28 @@ export interface ImportResult {
   inchanges: number;
   juryIntrouvable: number;
   warnings: string[];
+}
+
+// ✅ Mise à jour de numeroDiplome = "100/N° Table/2026/N° Academie" à partir d'Excel
+export interface DiplomeImportResult {
+  fichier: string;
+  total: number;
+  misAJour: number;
+  nonTrouves: number;
+  colonneAcademieAbsente: number;
+  warnings: string[];
+}
+
+export type DiplomeImportJobStatut = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINE' | 'ECHEC';
+
+export interface DiplomeImportJob {
+  id: string;
+  statut: DiplomeImportJobStatut;
+  totalFichiers: number;
+  resultats: DiplomeImportResult[] | null;
+  erreur: string | null;
+  dateDebut: string;
+  dateFin: string | null;
 }
 
 // ✅ Format Spring Data Page<T>
@@ -109,6 +132,11 @@ interface NouveauBachelierState {
   importExcelMultiple: (files: File[]) => Promise<ImportResult[]>;
   importCsv: (file: File) => Promise<string[]>;
   fetchJurysNonCharges: (technique?: boolean) => Promise<void>;
+
+  // ✅ Mise à jour de numeroDiplome (synchrone ou asynchrone via job)
+  importNumeroDiplome: (files: File[]) => Promise<DiplomeImportResult[]>;
+  demarrerImportNumeroDiplomeAsync: (files: File[]) => Promise<string>;
+  fetchJobImportNumeroDiplome: (jobId: string) => Promise<DiplomeImportJob>;
 
   // UI Actions
   setSearchTerm: (term: string) => void;
@@ -329,6 +357,62 @@ export const useNouveauBachelierStore = create<NouveauBachelierState>()(
           set({ error: message, isLoading: false }, false, 'bachelier/searchByNumeroTable/rejected');
           throw error;
         }
+      },
+
+      // ✅ Mise à jour de numeroDiplome — version synchrone (petits volumes)
+      importNumeroDiplome: async (files: File[]) => {
+        set({ isSubmitting: true, error: null }, false, 'bachelier/importNumeroDiplome/pending');
+        const formData = new FormData();
+        files.forEach(file => formData.append('files', file));
+
+        try {
+          const response = await axiosInstance.post<DiplomeImportResult[]>(
+            '/nouveauBacheliers/import/numero-diplome',
+            formData,
+            {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            }
+          );
+          set({ isSubmitting: false }, false, 'bachelier/importNumeroDiplome/fulfilled');
+          await get().fetchPage();
+          return response.data;
+        } catch (error: any) {
+          const message = error?.response?.data?.message || 'Erreur lors de la mise à jour de numeroDiplome';
+          set({ error: message, isSubmitting: false }, false, 'bachelier/importNumeroDiplome/rejected');
+          throw error;
+        }
+      },
+
+      // ✅ Mise à jour de numeroDiplome — version asynchrone (recommandée pour ~100k+ lignes)
+      // Retourne immédiatement le jobId ; le traitement se fait en tâche de fond côté serveur.
+      demarrerImportNumeroDiplomeAsync: async (files: File[]) => {
+        set({ isSubmitting: true, error: null }, false, 'bachelier/demarrerImportNumeroDiplomeAsync/pending');
+        const formData = new FormData();
+        files.forEach(file => formData.append('files', file));
+
+        try {
+          const response = await axiosInstance.post<{ jobId: string; statusUrl: string }>(
+            '/nouveauBacheliers/import/numero-diplome/async',
+            formData,
+            {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            }
+          );
+          set({ isSubmitting: false }, false, 'bachelier/demarrerImportNumeroDiplomeAsync/fulfilled');
+          return response.data.jobId;
+        } catch (error: any) {
+          const message = error?.response?.data?.message || "Erreur lors du démarrage de l'import";
+          set({ error: message, isSubmitting: false }, false, 'bachelier/demarrerImportNumeroDiplomeAsync/rejected');
+          throw error;
+        }
+      },
+
+      // ✅ Suivi d'un job d'import asynchrone de numeroDiplome (à appeler en polling)
+      fetchJobImportNumeroDiplome: async (jobId: string) => {
+        const response = await axiosInstance.get<DiplomeImportJob>(
+          `/nouveauBacheliers/import/numero-diplome/status/${jobId}`
+        );
+        return response.data;
       },
 
       // ✅ Jurys n'ayant encore aucun bachelier chargé (filtrable par technique)

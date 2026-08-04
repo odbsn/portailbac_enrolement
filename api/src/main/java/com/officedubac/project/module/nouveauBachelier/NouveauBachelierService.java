@@ -2,6 +2,8 @@ package com.officedubac.project.module.nouveauBachelier;
 
 import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.models.Jury;
+import com.officedubac.project.module.nouveauBachelier.dto.DiplomeImportJob;
+import com.officedubac.project.module.nouveauBachelier.dto.DiplomeImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierAudit;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
@@ -13,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -41,4 +44,17 @@ public interface NouveauBachelierService {
     // ✅ Liste des jurys (collection "jury") qui n'ont encore AUCUN bachelier chargé dans "nouveauBachelier"
     List<Jury> findJurysNonCharges(Boolean technique) throws BusinessResourceException;
     List<Jury> findJuryNumerosAvec2emeGroupe()           throws BusinessResourceException;
+
+    // ✅ Mise à jour de numeroDiplome = "100/N° Table/2026/N° Academie" à partir de fichier(s) Excel
+    //    (colonne "N° Academie" requise ; les fichiers qui ne l'ont pas sont ignorés)
+    // Version synchrone (bloquante) — à réserver aux petits volumes / tests.
+    List<DiplomeImportResult> importerNumeroDiplomeDepuisExcel(List<MultipartFile> files) throws IOException;
+
+    // Version asynchrone — recommandée pour ~100k+ lignes, évite les timeouts HTTP.
+    // 1) creerJobImportNumeroDiplome() crée le job et retourne son id immédiatement.
+    // 2) traiterImportNumeroDiplomeAsync() exécute le traitement en tâche de fond.
+    // 3) getJobImportNumeroDiplome() permet de suivre l'avancement / récupérer le résultat.
+    String creerJobImportNumeroDiplome(int totalFichiers);
+    void traiterImportNumeroDiplomeAsync(String jobId, Map<String, byte[]> fichiers);
+    Optional<DiplomeImportJob> getJobImportNumeroDiplome(String jobId);
 }
