@@ -535,6 +535,13 @@ export default function EspaceCandidat() {
                               Mention : {resultatBac.mention}
                             </div>
                           )}
+
+                          {resultatBac.numeroDiplome && (
+                            <div className="resultat-diplome">
+                              <i className="pi pi-id-card"></i>
+                              Votre numéro de diplôme : {resultatBac.numeroDiplome}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -969,6 +976,23 @@ export default function EspaceCandidat() {
         .mention-neutral {
           background: #f1f1f1;
           color: #616161;
+        }
+
+        .resultat-diplome {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0.6rem 1.5rem;
+          border-radius: 50px;
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin-top: 0.75rem;
+          background: #e6f1fb;
+          color: #1565c0;
+        }
+
+        .resultat-diplome i {
+          font-size: 1em;
         }
 
         @media (max-width: 900px) {

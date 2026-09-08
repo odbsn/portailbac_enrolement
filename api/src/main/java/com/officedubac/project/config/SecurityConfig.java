@@ -89,6 +89,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/authentification/**").permitAll()
                                 .requestMatchers("/api/v1/imports-bacheliers/**").hasAnyAuthority(Role.ADMIN.name())
+                                //.requestMatchers("/api/v1/imports-bacheliers/**").permitAll()
+                                .requestMatchers("/api/v1/bacheliers-to-campusen/**").hasAnyAuthority(Role.ADMIN.name())
                         .requestMatchers("/api/v1/callback").permitAll()
                         //.requestMatchers("/api/v1/enrollment-cgs/**").permitAll()
                         .requestMatchers("/api/v1/import-data/**").permitAll()

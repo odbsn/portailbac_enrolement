@@ -119,4 +119,7 @@ public class CandidatFinis {
     private String centreMatFac2;
     private String libMatFac2;
     private String villeMatFac2;
+
+    // SESSION DE REMPLACEMENT
+    private boolean remplacement;
 }

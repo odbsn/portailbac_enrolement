@@ -13,6 +13,7 @@ import ImportExcelModal from './ImportExcelModal';
 import JurysNonChargesPanel from './Jurysnonchargespanel';
 import ImportExcelMultipleModal from './Importexcelmultiplemodal';
 import ImportZipModal from './Importzipmodal';
+import ImportNumeroDiplomeModal from './ImportNumeroDiplomeModal';
 
 // ─── Composants UI ───────────────────────────────────────────────────────────
 
@@ -147,6 +148,7 @@ function BacheliersTable() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showImportMultipleModal, setShowImportMultipleModal] = useState(false);
   const [showImportZipModal, setShowImportZipModal] = useState(false);
+  const [showImportDiplomeModal, setShowImportDiplomeModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(searchTerm);
 
@@ -174,6 +176,14 @@ function BacheliersTable() {
     columnHelper.accessor('numeroTable', {
       header: 'N° Table',
       cell: info => <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{info.getValue()}</span>,
+    }),
+    columnHelper.accessor('numeroDiplome', {
+      header: 'N° Diplôme',
+      cell: info => (
+        <span style={{ fontFamily: 'monospace' }}>
+          {info.getValue() || '—'}
+        </span>
+      ),
     }),
     columnHelper.accessor('nom', {
       header: 'Nom',
@@ -285,6 +295,12 @@ function BacheliersTable() {
             style={buttonStyle('#f97316')}
           >
             🗜️ Importer des ZIP
+          </button>
+          <button
+            onClick={() => setShowImportDiplomeModal(true)}
+            style={buttonStyle('#7c3aed')}
+          >
+            🎓 Importer N° Diplôme
           </button>
           <button
             onClick={() => window.location.href = '/bacheliers/ajouter'}
@@ -457,6 +473,13 @@ function BacheliersTable() {
       <ImportZipModal
         open={showImportZipModal}
         onClose={() => setShowImportZipModal(false)}
+        onSuccess={() => { fetchPage(0); }}
+      />
+
+      {/* Import Modal (mise à jour numeroDiplome, asynchrone) */}
+      <ImportNumeroDiplomeModal
+        open={showImportDiplomeModal}
+        onClose={() => setShowImportDiplomeModal(false)}
         onSuccess={() => { fetchPage(0); }}
       />
     </div>

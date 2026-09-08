@@ -3,6 +3,8 @@ package com.officedubac.project.module.nouveauBachelier.v1;
 import com.officedubac.project.exception.BusinessResourceException;
 import com.officedubac.project.models.Jury;
 import com.officedubac.project.module.nouveauBachelier.NouveauBachelierService;
+import com.officedubac.project.module.nouveauBachelier.dto.DiplomeImportJob;
+import com.officedubac.project.module.nouveauBachelier.dto.DiplomeImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.ImportResult;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierRequest;
 import com.officedubac.project.module.nouveauBachelier.dto.NouveauBachelierResponse;
@@ -20,7 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -173,6 +177,50 @@ public class NouveauBachelierResource {
     public ResponseEntity<List<Jury>> jurysAvec2emeGroupe() {
         List<Jury> response = service.findJuryNumerosAvec2emeGroupe();
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // ✅ NOUVEAU : mise à jour de numeroDiplome = "100/N° Table/2026/N° Academie"
+    //    à partir de fichier(s) Excel contenant la colonne "N° Academie".
+    //    Version synchrone — à réserver aux petits volumes (risque de timeout sur ~100k lignes).
+    @PostMapping("/import/numero-diplome")
+    public ResponseEntity<List<DiplomeImportResult>> importerNumeroDiplome(
+            @RequestParam("files") List<MultipartFile> files) throws IOException {
+        log.info("Réception de {} fichier(s) Excel pour mise à jour de numeroDiplome", files.size());
+        List<DiplomeImportResult> results = service.importerNumeroDiplomeDepuisExcel(files);
+        results.forEach(r -> log.info(r.toSummary()));
+        return ResponseEntity.ok(results);
+    }
+
+    // ✅ NOUVEAU : version asynchrone — recommandée pour ~100k+ lignes.
+    //    Retourne immédiatement un jobId ; le traitement se fait en tâche de fond.
+    @PostMapping("/import/numero-diplome/async")
+    public ResponseEntity<Map<String, String>> importerNumeroDiplomeAsync(
+            @RequestParam("files") List<MultipartFile> files) throws IOException {
+        log.info("Réception de {} fichier(s) Excel pour mise à jour asynchrone de numeroDiplome", files.size());
+
+        // Lire le contenu des fichiers immédiatement : le MultipartFile n'est plus
+        // valide une fois la requête HTTP terminée, or le traitement se fait après.
+        Map<String, byte[]> fichiers = new LinkedHashMap<>();
+        for (MultipartFile file : files) {
+            String nomFichier = file.getOriginalFilename() != null ? file.getOriginalFilename() : "fichier_" + System.nanoTime();
+            fichiers.put(nomFichier, file.getBytes());
+        }
+
+        String jobId = service.creerJobImportNumeroDiplome(fichiers.size());
+        service.traiterImportNumeroDiplomeAsync(jobId, fichiers);
+
+        return ResponseEntity.accepted().body(Map.of(
+                "jobId", jobId,
+                "statusUrl", "/api/v1/nouveauBacheliers/import/numero-diplome/status/" + jobId
+        ));
+    }
+
+    // ✅ NOUVEAU : suivi d'un job d'import asynchrone de numeroDiplome
+    @GetMapping("/import/numero-diplome/status/{jobId}")
+    public ResponseEntity<DiplomeImportJob> statutImportNumeroDiplome(@PathVariable String jobId) {
+        return service.getJobImportNumeroDiplome(jobId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
 

@@ -201,6 +201,11 @@ const AppMenu = () => {
           icon: "pi pi-copy",
           to: "/convocations/resultatBac",
         },
+        hasAccess(["ADMIN"]) && {
+          label: "Bacheliers Campusen",
+          icon: "pi pi-verified",
+          to: "/convocations/bacheliersCampusen",
+        },
         hasAccess(["SCOLARITE", "ADMIN"]) && {
           label: "Contacts Etablissements",
           icon: "pi pi-fw pi-phone",

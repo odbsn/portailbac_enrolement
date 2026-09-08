@@ -76,6 +76,9 @@ export default function CandidatsTabTable({
     useState<string>("");
   const [numeroDossierFilter, setNumeroDossierFilter] = useState<string>("");
   const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importRemplacementModalVisible, setImportRemplacementModalVisible] =
+    useState(false);
+  const [remplacementOnly, setRemplacementOnly] = useState(false);
   const [rows, setRows] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
   const [convocationSerie, setConvocationSerie] = useState<string>("");
@@ -445,6 +448,26 @@ export default function CandidatsTabTable({
     return rowData.centreEcritParticulier || rowData.centreEcrit?.code || "-";
   };
 
+  const remplacementTemplate = (rowData: CandidatFinis) => {
+    if (!rowData.remplacement) return null;
+    return (
+      <span
+        style={{
+          background: "#fff7ed",
+          color: "#c2410c",
+          border: "1px solid #fed7aa",
+          borderRadius: 999,
+          padding: "2px 8px",
+          fontSize: 11,
+          fontWeight: 600,
+          whiteSpace: "nowrap",
+        }}
+      >
+        🔁 Remplacement
+      </span>
+    );
+  };
+
   const getPrintButtonLabel = () => {
     if (selectedSerieForPrint === "all") {
       return "Imprimer toutes les convocations (toutes séries)";
@@ -592,6 +615,49 @@ export default function CandidatsTabTable({
       <Tooltip target=".action-btn" />
 
       <div className="card shadow-4 border-round-xl overflow-hidden">
+        {/* Onglets : gestion normale / session de remplacement */}
+        <div
+          className="bg-white border-bottom-1 surface-border flex"
+          style={{ padding: "0 1.5rem" }}
+        >
+          <button
+            onClick={() => {
+              setRemplacementOnly(false);
+              setFilters({ remplacement: undefined, page: 0 });
+            }}
+            style={{
+              padding: "12px 20px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: "none",
+              border: "none",
+              borderBottom: !remplacementOnly ? "2px solid #2563eb" : "2px solid transparent",
+              color: !remplacementOnly ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+            }}
+          >
+            Candidats
+          </button>
+          <button
+            onClick={() => {
+              setRemplacementOnly(true);
+              setFilters({ remplacement: true, page: 0 });
+            }}
+            style={{
+              padding: "12px 20px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: "none",
+              border: "none",
+              borderBottom: remplacementOnly ? "2px solid #ea580c" : "2px solid transparent",
+              color: remplacementOnly ? "#ea580c" : "#6b7280",
+              cursor: "pointer",
+            }}
+          >
+            🔁 Session de remplacement
+          </button>
+        </div>
+
         {/* Toolbar */}
         <div className="bg-white p-4 border-bottom-1 surface-border">
           <Toolbar
@@ -730,6 +796,12 @@ export default function CandidatsTabTable({
                     icon="pi pi-upload"
                     severity="info"
                     onClick={() => setImportModalVisible(true)}
+                  />
+                  <Button
+                    label="Importer session de remplacement"
+                    icon="pi pi-refresh"
+                    severity="warning"
+                    onClick={() => setImportRemplacementModalVisible(true)}
                   />
                   <Button
                     label="Nouveau candidat"
@@ -999,6 +1071,12 @@ export default function CandidatsTabTable({
               header="Série"
               style={{ maxWidth: "3rem", minWidth: "2.5rem" }}
             />
+            <Column
+              field="remplacement"
+              header="Session"
+              body={remplacementTemplate}
+              style={{ maxWidth: "8rem", minWidth: "6rem" }}
+            />
             {/* <Column
               header="Mat. opt."
               body={matieresOptionnellesTemplate}
@@ -1088,6 +1166,20 @@ export default function CandidatsTabTable({
     });
   }}
 />
+        <ImportExcelModal
+          remplacement
+          open={importRemplacementModalVisible}
+          onClose={() => setImportRemplacementModalVisible(false)}
+          onSuccess={() => {
+            fetchCandidats();
+            toast.current?.show({
+              severity: "success",
+              summary: "Import terminé",
+              detail: "La session de remplacement a été mise à jour",
+              life: 3000,
+            });
+          }}
+        />
       </div>
 
       <style jsx global>{`

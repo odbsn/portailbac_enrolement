@@ -35,6 +35,7 @@ public class BacheliersToCampusen
     private String dateNaissance;
     private String anneeNaissance;
     private String lieuNaissance;
+    private String telephone;
     private String sexe;
     private String etsProvenance;
     private String typeCandidature;

@@ -32,6 +32,7 @@ public interface CandidatFinisService {
             String sexe,
             String nationalite,
             String etablissementCode,
+            Boolean remplacement,
             Pageable pageable);
 
     // Méthodes pour l'utilisateur connecté

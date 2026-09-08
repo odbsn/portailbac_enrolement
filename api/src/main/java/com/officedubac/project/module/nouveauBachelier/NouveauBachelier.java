@@ -23,6 +23,7 @@ public class NouveauBachelier {
    private String prenoms;
    private String nom;
    private String numeroTable;
+   private String numeroDiplome;
    private Jury jury;
    private String resultat;
    private String mention;

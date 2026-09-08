@@ -144,7 +144,7 @@ export default function EspaceCandidat() {
     currentCandidat,
     isLoading: isLoadingCandidat,
     error: candidatError,
-    downloadConvocation,
+    generatePdf,
     clearCurrentCandidat,
     clearError,
   } = useCandidatStore();
@@ -223,11 +223,9 @@ export default function EspaceCandidat() {
     setTimeout(() => safeNavigate("/"), 1500);
   };
 
+  // ✅ Même génération que l'admin et l'établissement : GET /convocations/{numeroTable}
+  // (au lieu du téléchargement d'un fichier statique via /convocations/download-attachment)
   const handleDownloadConvocation = async () => {
-    const centreCode =
-      currentCandidat?.centreCode ||
-      candidatInfo?.centreCode ||
-      candidatInfo?.codeEtab;
     const numeroTable = candidatInfo?.numeroTable;
 
     if (!numeroTable) {
@@ -240,16 +238,6 @@ export default function EspaceCandidat() {
       return;
     }
 
-    if (!centreCode) {
-      toastRef.current?.show({
-        severity: "error",
-        summary: "Erreur",
-        detail: "Code centre non disponible",
-        life: 3000,
-      });
-      return;
-    }
-
     toastRef.current?.show({
       severity: "info",
       summary: "Téléchargement",
@@ -257,19 +245,35 @@ export default function EspaceCandidat() {
       life: 2000,
     });
 
-    const success = await downloadConvocation({
-      centreCode: centreCode,
-      numeroTable: numeroTable,
-    });
+    try {
+      const blob = await generatePdf(numeroTable);
 
-    if (success) {
-      toastRef.current?.show({
-        severity: "success",
-        summary: "Succès",
-        detail: "Convocation téléchargée avec succès",
-        life: 3000,
-      });
-    } else {
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `convocation_${numeroTable}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        toastRef.current?.show({
+          severity: "success",
+          summary: "Succès",
+          detail: "Convocation téléchargée avec succès",
+          life: 3000,
+        });
+      } else {
+        toastRef.current?.show({
+          severity: "error",
+          summary: "Erreur",
+          detail: "Impossible de télécharger la convocation",
+          life: 3000,
+        });
+      }
+    } catch (err) {
+      console.error("Erreur lors de la génération du PDF:", err);
       toastRef.current?.show({
         severity: "error",
         summary: "Erreur",
@@ -533,6 +537,13 @@ export default function EspaceCandidat() {
                             >
                               <i className="pi pi-star-fill"></i>
                               Mention : {resultatBac.mention}
+                            </div>
+                          )}
+
+                          {resultatBac.numeroDiplome && (
+                            <div className="resultat-diplome">
+                              {/* <i className="pi pi-id-card"></i> */}
+                              Votre numéro de diplôme : {resultatBac.numeroDiplome}
                             </div>
                           )}
                         </div>
@@ -969,6 +980,23 @@ export default function EspaceCandidat() {
         .mention-neutral {
           background: #f1f1f1;
           color: #616161;
+        }
+
+        .resultat-diplome {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0.6rem 1rem;
+          border-radius: 50px;
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin-top: 0.75rem;
+          background: #e6f1fb;
+          color: #1565c0;
+        }
+
+        .resultat-diplome i {
+          font-size: 1em;
         }
 
         @media (max-width: 900px) {

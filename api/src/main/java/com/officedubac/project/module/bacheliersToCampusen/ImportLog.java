@@ -26,7 +26,9 @@ public class ImportLog
     private String nomFichier;
     private int nombreFeuilles;
     private long nombreCandidats;
-    private Map<String, Long> candidatsParSerie;
+    private long nombreNouveaux;
+    private long nombreMisAJour;
+    private Map<String, SerieImportStat> candidatsParSerie;
     private Instant dateImport;
 
 }

@@ -41,6 +41,9 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Import de la session de remplacement : mêmes règles, mais chaque candidat
+   *  créé est marqué remplacement=true (endpoint dédié, distinct de l'import normal). */
+  remplacement?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ function StatBadge({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ImportExcelModal({ open, onClose, onSuccess }: Props) {
+export default function ImportExcelModal({ open, onClose, onSuccess, remplacement = false }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -126,7 +129,7 @@ export default function ImportExcelModal({ open, onClose, onSuccess }: Props) {
 
     try {
       const response = await axiosInstance.post<ImportResult>(
-        "candidats/import-excel",
+        remplacement ? "candidats/import-excel-remplacement" : "candidats/import-excel",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -208,16 +211,17 @@ export default function ImportExcelModal({ open, onClose, onSuccess }: Props) {
       <div
         style={{
           width: 36, height: 36, borderRadius: 8,
-          background: "#f0fdf4", border: "1px solid #bbf7d0",
+          background: remplacement ? "#fff7ed" : "#f0fdf4",
+          border: `1px solid ${remplacement ? "#fed7aa" : "#bbf7d0"}`,
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 18,
         }}
       >
-        📊
+        {remplacement ? "🔁" : "📊"}
       </div>
       <div>
         <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: "#111" }}>
-          Importer depuis Excel
+          {remplacement ? "Importer la session de remplacement" : "Importer depuis Excel"}
         </p>
         <p style={{ margin: 0, fontSize: 12, color: "#888" }}>
           Fichier .xlsx uniquement

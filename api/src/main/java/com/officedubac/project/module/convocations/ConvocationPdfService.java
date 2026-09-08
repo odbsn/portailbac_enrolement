@@ -133,7 +133,7 @@ public class ConvocationPdfService {
                 .setFont(boldFont)
                 .setFontSize(10));
 
-        cellCenter.add(new Paragraph("SESSION NORMALE"+" "+(LocalDate.now().getYear()))
+        cellCenter.add(new Paragraph((c.isRemplacement() ? "SESSION DE REMPLACEMENT" : "SESSION NORMALE") + " " + (LocalDate.now().getYear()))
                 .setFont(boldFont)
                 .setFontSize(10));
 
@@ -783,7 +783,7 @@ public class ConvocationPdfService {
                 .setFont(boldFont)
                 .setFontSize(10));
 
-        cellCenter.add(new Paragraph("SESSION NORMALE" + " " + (LocalDate.now().getYear()))
+        cellCenter.add(new Paragraph((c.isRemplacement() ? "SESSION DE REMPLACEMENT" : "SESSION NORMALE") + " " + (LocalDate.now().getYear()))
                 .setFont(boldFont)
                 .setFontSize(10));
 
@@ -1311,6 +1311,8 @@ public class ConvocationPdfService {
 
         entity.setCentreMatFac2(response.getCentreMatFac2());
         entity.setLibMatFac2(response.getLibMatFac2());
+
+        entity.setRemplacement(response.isRemplacement());
 
         return entity;
     }

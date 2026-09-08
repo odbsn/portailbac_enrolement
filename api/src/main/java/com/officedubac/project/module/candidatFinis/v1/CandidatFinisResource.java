@@ -158,11 +158,13 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,
+            @Parameter(description = "Filtrer sur la session de remplacement (absent = tous)")
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
                 keyword, serie, jury, numeroDossier, typeCandidat,
-                statutResultat, sexe, nationalite, etablissementCode, pageable);
+                statutResultat, sexe, nationalite, etablissementCode, remplacement, pageable);
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/search")
@@ -186,11 +188,12 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,  // ← AJOUT
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFilters(
                 keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);  // ← AJOUT
+                etablissementCode, remplacement, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
 
@@ -319,6 +322,19 @@ public class CandidatFinisResource {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Erreur import: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/import-excel-remplacement")
+    @Operation(summary = "Importer des candidats de la session de remplacement depuis Excel",
+            description = "Même import que /import-excel, mais chaque candidat créé est marqué remplacement=true")
+    public ResponseEntity<CandidatImportService.ImportResult> importFromExcelRemplacement(@RequestParam("file") MultipartFile file) {
+        try {
+            CandidatImportService.ImportResult result = candidatImportService.importFromExcel(file, true);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur import session de remplacement: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

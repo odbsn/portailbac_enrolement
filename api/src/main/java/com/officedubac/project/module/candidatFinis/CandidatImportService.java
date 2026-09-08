@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +49,16 @@ public class CandidatImportService {
      */
     @Transactional
     public ImportResult importFromExcel(MultipartFile file) {
+        return importFromExcel(file, false);
+    }
+
+    /**
+     * Import de session de remplacement : mêmes règles d'import, mais chaque
+     * candidat créé est marqué remplacement=true — distinct de l'import normal
+     * (remplacement=false) utilisé pour la gestion habituelle des candidats.
+     */
+    @Transactional
+    public ImportResult importFromExcel(MultipartFile file, boolean remplacement) {
         ImportResult result = new ImportResult();
         File tempFile = null;
 
@@ -89,7 +100,7 @@ public class CandidatImportService {
                                         return;
                                     }
 
-                                    CandidatFinis candidat = convertToEntityWithExistingRefs(dto, validation);
+                                    CandidatFinis candidat = convertToEntityWithExistingRefs(dto, validation, remplacement);
 
                                     if (isValidCandidat(candidat)) {
                                         synchronized (batchList) {
@@ -539,6 +550,11 @@ public class CandidatImportService {
         // Charger tous les établissements
         List<Etablissement> etablissements = mongoTemplate.findAll(Etablissement.class);
 
+        // ✅ Complète 'codeNormalise' (utilisé par la recherche de convocation de l'espace
+        // candidat, ConvocationReactiveService) pour tout établissement qui ne l'a pas encore —
+        // normalisation identique : trim + suppression des espaces + majuscules.
+        backfillCodeNormalise(etablissements);
+
         // Mapping par NOM (pour établissement principal et centre d'écrit)
         this.etablissementByNameMap = etablissements.stream()
                 .filter(e -> e.getName() != null && !e.getName().isEmpty())
@@ -569,6 +585,30 @@ public class CandidatImportService {
 
         log.info("Références chargées - Établissements par nom: {}, par code: {}, Villes: {}",
                 etablissementByNameMap.size(), etablissementByCodeMap.size(), villeMap.size());
+    }
+
+    private void backfillCodeNormalise(List<Etablissement> etablissements) {
+        BulkOperations bulkOps = null;
+        int count = 0;
+        for (Etablissement e : etablissements) {
+            if (e.getCode() == null || e.getCode().isBlank()) continue;
+            String normalise = e.getCode().trim().replaceAll("\\s+", "").toUpperCase();
+            if (normalise.equals(e.getCodeNormalise())) continue;
+
+            if (bulkOps == null) {
+                bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, Etablissement.class);
+            }
+            bulkOps.updateOne(
+                    Query.query(Criteria.where("id").is(e.getId())),
+                    new Update().set("codeNormalise", normalise)
+            );
+            e.setCodeNormalise(normalise); // garder l'objet en mémoire cohérent avec la base
+            count++;
+        }
+        if (bulkOps != null) {
+            bulkOps.execute();
+            log.info("codeNormalise complété pour {} établissement(s)", count);
+        }
     }
 
     /**
@@ -626,7 +666,7 @@ public class CandidatImportService {
     /**
      * Convertit DTO en entité avec gestion sécurisée des types
      */
-    private CandidatFinis convertToEntityWithExistingRefs(CandidatExcelDto dto, ValidationResult validation) {
+    private CandidatFinis convertToEntityWithExistingRefs(CandidatExcelDto dto, ValidationResult validation, boolean remplacement) {
 
         // 1. Établissement principal - par CODE
         String etablissementCode = safeTrim(dto.getCodeEtsProvenance());
@@ -719,6 +759,7 @@ public class CandidatImportService {
                 .centreMatFac2(safeTrim(dto.getCentreMatFac2()))
                 .libMatFac2(safeTrim(dto.getLibMatFac2()))
                 .villeMatFac2(safeTrim(dto.getVilleMatFac2()))
+                .remplacement(remplacement)
                 .build();
     }
 

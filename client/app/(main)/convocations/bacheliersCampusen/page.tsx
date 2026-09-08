@@ -8,38 +8,10 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useShallow } from 'zustand/react/shallow';
-import { NouveauBachelierResponse, useNouveauBachelierStore } from '../nouveauBachelierStore';
-import ImportExcelModal from './ImportExcelModal';
-import JurysNonChargesPanel from './Jurysnonchargespanel';
-import ImportExcelMultipleModal from './Importexcelmultiplemodal';
-import ImportZipModal from './Importzipmodal';
-import ImportNumeroDiplomeModal from './ImportNumeroDiplomeModal';
+import { BacheliersToCampusen, useBacheliersToCampusenStore } from '../bacheliersToCampusenStore';
+import ImportBacheliersModal from './ImportBacheliersModal';
 
 // ─── Composants UI ───────────────────────────────────────────────────────────
-
-function StatusBadge({ resultat }: { resultat: string }) {
-  const styles: Record<string, { bg: string; text: string; label: string }> = {
-    ADMIS: { bg: '#dcfce7', text: '#166534', label: '✅ Admis' },
-    ADMIS_MENTION: { bg: '#fef9c3', text: '#854d0e', label: '⭐ Admis mention' },
-    AJOURNE: { bg: '#fee2e2', text: '#991b1b', label: '❌ Ajourné' },
-    ABSENT: { bg: '#f3f4f6', text: '#4b5563', label: '⏳ Absent' },
-  };
-  const style = styles[resultat] || { bg: '#f3f4f6', text: '#4b5563', label: resultat };
-
-  return (
-    <span style={{
-      background: style.bg,
-      color: style.text,
-      padding: '4px 10px',
-      borderRadius: 20,
-      fontSize: 12,
-      fontWeight: 500,
-      display: 'inline-block',
-    }}>
-      {style.label}
-    </span>
-  );
-}
 
 function LoadingSpinner() {
   return (
@@ -54,65 +26,10 @@ function LoadingSpinner() {
   );
 }
 
-// ─── Onglets de premier niveau ────────────────────────────────────────────────
-
-type MainTabKey = 'bacheliers' | 'jurysNonCharges';
-
-export default function BacheliersPage() {
-  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>('bacheliers');
-
-  return (
-    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-      {/* Onglets principaux */}
-      <div style={{
-        display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb',
-        padding: '0 24px', marginTop: 24
-      }}>
-        <MainTabButton
-          active={activeMainTab === 'bacheliers'}
-          onClick={() => setActiveMainTab('bacheliers')}
-          label="📚 Bacheliers"
-        />
-        <MainTabButton
-          active={activeMainTab === 'jurysNonCharges'}
-          onClick={() => setActiveMainTab('jurysNonCharges')}
-          label="📋 Jurys non chargés"
-        />
-      </div>
-
-      {activeMainTab === 'bacheliers' ? <BacheliersTable /> : <JurysNonChargesPanel />}
-    </div>
-  );
-}
-
-function MainTabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '12px 20px',
-        fontSize: 14,
-        fontWeight: 600,
-        background: 'none',
-        border: 'none',
-        borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
-        color: active ? '#2563eb' : '#6b7280',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-// ─── Composant Bacheliers (anciennement BacheliersPage) ──────────────────────
-
-function BacheliersTable() {
+export default function BacheliersCampusenPage() {
   const {
     bacheliers,
     isLoading,
-    isSubmitting,
     error,
     searchTerm,
     currentPage,
@@ -120,16 +37,14 @@ function BacheliersTable() {
     totalElements,
     totalPages,
     fetchPage,
-    delete: deleteBachelier,
     setSearchTerm,
     setCurrentPage,
     setPageSize,
     clearError,
-  } = useNouveauBachelierStore(
+  } = useBacheliersToCampusenStore(
     useShallow((state) => ({
       bacheliers: state.bacheliers,
       isLoading: state.isLoading,
-      isSubmitting: state.isSubmitting,
       error: state.error,
       searchTerm: state.searchTerm,
       currentPage: state.currentPage,
@@ -137,7 +52,6 @@ function BacheliersTable() {
       totalElements: state.totalElements,
       totalPages: state.totalPages,
       fetchPage: state.fetchPage,
-      delete: state.delete,
       setSearchTerm: state.setSearchTerm,
       setCurrentPage: state.setCurrentPage,
       setPageSize: state.setPageSize,
@@ -146,10 +60,6 @@ function BacheliersTable() {
   );
 
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showImportMultipleModal, setShowImportMultipleModal] = useState(false);
-  const [showImportZipModal, setShowImportZipModal] = useState(false);
-  const [showImportDiplomeModal, setShowImportDiplomeModal] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(searchTerm);
 
   // ── Chargement initial ──────────────────────────────────────────────────
@@ -170,72 +80,88 @@ function BacheliersTable() {
   }, [searchInput]);
 
   // ─── Colonnes du tableau ───────────────────────────────────────────────────
-  const columnHelper = createColumnHelper<NouveauBachelierResponse>();
+  const columnHelper = createColumnHelper<BacheliersToCampusen>();
+
+  // ── Tous les champs du modèle sont affichés (demande explicite : "afficher
+  //    toutes les informations dans la liste") ────────────────────────────────
+  const FIELDS: { key: keyof BacheliersToCampusen; label: string; bold?: boolean; mono?: boolean }[] = [
+    { key: 'numeroTable', label: 'N° Table', mono: true },
+    { key: 'serie', label: 'Série' },
+    { key: 'nom', label: 'Nom', bold: true },
+    { key: 'prenoms', label: 'Prénoms', bold: true },
+    { key: 'annee', label: 'Année' },
+    { key: 'dateNaissance', label: 'Date naissance' },
+    { key: 'anneeNaissance', label: 'Année naissance' },
+    { key: 'lieuNaissance', label: 'Lieu naissance' },
+    { key: 'paysNaissance', label: 'Pays naissance' },
+    { key: 'sexe', label: 'Sexe' },
+    { key: 'telephone', label: 'Téléphone' },
+    { key: 'nationalite', label: 'Nationalité' },
+    { key: 'etsProvenance', label: 'Établissement provenance' },
+    { key: 'academieProvenance', label: 'Académie provenance' },
+    { key: 'typeCandidature', label: 'Type candidature' },
+    { key: 'residence', label: 'Résidence' },
+    { key: 'centreEcrit', label: "Centre d'écrit" },
+    { key: 'numeroJury', label: 'N° Jury' },
+    { key: 'nombreFois', label: 'Nbre fois' },
+    { key: 'matiereOptionnelle1', label: 'Mat. opt. 1' },
+    { key: 'matiereOptionnelle2', label: 'Mat. opt. 2' },
+    { key: 'matiereOptionnelle3', label: 'Mat. opt. 3' },
+    { key: 'epreuveFacultativeListeA', label: 'Épr. fac. liste A' },
+    { key: 'epreuveFacultativeListeB', label: 'Épr. fac. liste B' },
+    { key: 'noteEpreuveFacultativeA', label: 'Note EF A' },
+    { key: 'noteEpreuveFacultativeB', label: 'Note EF B' },
+    { key: 'noteEps', label: 'Note EPS' },
+    { key: 'present', label: 'Présent' },
+    { key: 'resultat', label: 'Résultat' },
+    { key: 'mention', label: 'Mention' },
+    { key: 'groupeResultat', label: 'Groupe résultat' },
+    { key: 'dateDeliberation', label: 'Date délibération' },
+    { key: 'cec', label: 'CEC' },
+    { key: 'numeroAec', label: 'N° AEC' },
+    { key: 'anneeExtraitEc', label: "Année extrait EC" },
+    { key: 'typeAec', label: 'Type AEC' },
+    { key: 'moyenneSeconde', label: 'Moy. 2nde' },
+    { key: 'moyennePremiere', label: 'Moy. 1ère' },
+    { key: 'moyenneS1Terminale', label: 'Moy. S1 term.' },
+    { key: 'moyenneS2Terminale', label: 'Moy. S2 term.' },
+    { key: 'totalPointsGroupe1', label: 'Tot. pts grp 1' },
+    { key: 'moyenneGroupe1', label: 'Moy. grp 1' },
+    { key: 'totalPointsG1G2', label: 'Tot. pts G1+G2' },
+    { key: 'moyenneGenerale', label: 'Moy. générale' },
+    { key: 'moyenneMatieresFondamentales', label: 'Moy. mat. fond.' },
+    { key: 'moyenneRetenue', label: 'Moy. retenue' },
+    { key: 'moyenneDefinitive', label: 'Moy. définitive' },
+  ];
 
   const columns = useMemo(() => [
-    columnHelper.accessor('numeroTable', {
-      header: 'N° Table',
-      cell: info => <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{info.getValue()}</span>,
+    ...FIELDS.map(({ key, label, bold, mono }) =>
+      columnHelper.accessor(key as any, {
+        header: label,
+        cell: (info: any) => {
+          const value = info.getValue();
+          const display = value === null || value === undefined || value === '' ? '—' : String(value);
+          if (!bold && !mono) return display;
+          return (
+            <span style={{ fontWeight: bold ? 500 : undefined, fontFamily: mono ? 'monospace' : undefined }}>
+              {display}
+            </span>
+          );
+        },
+      })
+    ),
+    columnHelper.accessor('notes', {
+      header: 'Notes (matières spécifiques)',
+      cell: info => {
+        const notes = info.getValue();
+        if (!notes || Object.keys(notes).length === 0) return '—';
+        return Object.entries(notes).map(([k, v]) => `${k}: ${v}`).join(' · ');
+      },
     }),
-    columnHelper.accessor('numeroDiplome', {
-      header: 'N° Diplôme',
-      cell: info => (
-        <span style={{ fontFamily: 'monospace' }}>
-          {info.getValue() || '—'}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('nom', {
-      header: 'Nom',
-      cell: info => <span style={{ fontWeight: 500 }}>{info.getValue()}</span>,
-    }),
-    columnHelper.accessor('prenoms', {
-      header: 'Prénoms',
-    }),
-    columnHelper.accessor('telephone', {
-      header: 'Téléphone',
-      cell: info => info.getValue() || '—',
-    }),
-    columnHelper.accessor('resultat', {
-      header: 'Résultat',
-      cell: info => <StatusBadge resultat={info.getValue()} />,
-    }),
-    columnHelper.accessor('mention', {
-      header: 'Mention',
-      cell: info => info.getValue() || '—',
-    }),
-    columnHelper.accessor('jury', {
-      header: 'Jury',
-      // ✅ CORRECTION : l'entité Jury n'a pas de champ "code", seulement "numero" et "name"
-      cell: info => info.getValue()?.numero || '—',
-    }),
-    columnHelper.accessor('dateCreation', {
-      header: 'Date création',
-      cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => window.location.href = `/bacheliers/${row.original.id}`}
-            style={actionButtonStyle('#3b82f6')}
-          >
-            ✏️
-          </button>
-          <button
-            onClick={() => setDeleteConfirm(row.original.id)}
-            style={actionButtonStyle('#ef4444')}
-          >
-            🗑️
-          </button>
-        </div>
-      ),
-    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ], []);
 
-  // ─── Table (le tri/filtrage/pagination sont désormais gérés par le serveur) ─
+  // ─── Table (le tri/filtrage/pagination sont gérés par le serveur) ─────────
   const table = useReactTable({
     data: bacheliers,
     columns,
@@ -246,11 +172,6 @@ function BacheliersTable() {
   });
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    await deleteBachelier(id);
-    setDeleteConfirm(null);
-  };
-
   const goToPage = (page: number) => {
     setCurrentPage(page);
     fetchPage(page, pageSize, searchTerm);
@@ -265,12 +186,12 @@ function BacheliersTable() {
   if (isLoading && bacheliers.length === 0) return <LoadingSpinner />;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: '#111' }}>
-            📚 Gestion des Bacheliers
+            🎓 Bacheliers Campusen
           </h1>
           <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>
             {totalElements.toLocaleString('fr-FR')} bachelier{totalElements > 1 ? 's' : ''}
@@ -278,35 +199,8 @@ function BacheliersTable() {
         </div>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setShowImportModal(true)}
-            style={buttonStyle('#16a34a')}
-          >
+          <button onClick={() => setShowImportModal(true)} style={buttonStyle('#16a34a')}>
             📥 Importer Excel
-          </button>
-          <button
-            onClick={() => setShowImportMultipleModal(true)}
-            style={buttonStyle('#2563eb')}
-          >
-            🗂️ Importer plusieurs fichiers
-          </button>
-          <button
-            onClick={() => setShowImportZipModal(true)}
-            style={buttonStyle('#f97316')}
-          >
-            🗜️ Importer des ZIP
-          </button>
-          <button
-            onClick={() => setShowImportDiplomeModal(true)}
-            style={buttonStyle('#7c3aed')}
-          >
-            🎓 Importer N° Diplôme
-          </button>
-          <button
-            onClick={() => window.location.href = '/bacheliers/ajouter'}
-            style={buttonStyle('#2563eb')}
-          >
-            + Ajouter
           </button>
         </div>
       </div>
@@ -327,7 +221,7 @@ function BacheliersTable() {
       <div style={{ marginBottom: 20 }}>
         <input
           type="text"
-          placeholder="🔍 Rechercher par nom, prénom, numéro table, téléphone ou numéro de jury..."
+          placeholder="🔍 Rechercher par nom, prénom, numéro table ou téléphone..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{
@@ -350,17 +244,14 @@ function BacheliersTable() {
             <LoadingSpinner />
           </div>
         )}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id} style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
-                    style={{
-                      padding: '12px 16px', textAlign: 'left', fontWeight: 600,
-                      color: '#374151', userSelect: 'none'
-                    }}
+                    style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', userSelect: 'none', whiteSpace: 'nowrap' }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -379,7 +270,7 @@ function BacheliersTable() {
               table.getRowModel().rows.map(row => (
                 <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.1s' }}>
                   {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} style={{ padding: '12px 16px', color: '#1f2937' }}>
+                    <td key={cell.id} style={{ padding: '10px 14px', color: '#1f2937', whiteSpace: 'nowrap' }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -435,52 +326,10 @@ function BacheliersTable() {
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
-      {deleteConfirm && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h3 style={{ margin: '0 0 8px' }}>Confirmer la suppression</h3>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>
-              Êtes-vous sûr de vouloir supprimer ce bachelier ?
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ ...buttonStyle('#9ca3af'), padding: '8px 16px' }}>
-                Annuler
-              </button>
-              <button onClick={() => handleDelete(deleteConfirm)} style={{ ...buttonStyle('#dc2626'), padding: '8px 16px' }} disabled={isSubmitting}>
-                {isSubmitting ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal (fichier unique) */}
-      <ImportExcelModal
+      {/* Import Modal */}
+      <ImportBacheliersModal
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
-        onSuccess={() => { fetchPage(0); setShowImportModal(false); }}
-      />
-
-      {/* Import Modal (plusieurs fichiers) */}
-      <ImportExcelMultipleModal
-        open={showImportMultipleModal}
-        onClose={() => setShowImportMultipleModal(false)}
-        onSuccess={() => { fetchPage(0); }}
-      />
-
-      {/* Import Modal (fichiers ZIP) */}
-      <ImportZipModal
-        open={showImportZipModal}
-        onClose={() => setShowImportZipModal(false)}
-        onSuccess={() => { fetchPage(0); }}
-      />
-
-      {/* Import Modal (mise à jour numeroDiplome, asynchrone) */}
-      <ImportNumeroDiplomeModal
-        open={showImportDiplomeModal}
-        onClose={() => setShowImportDiplomeModal(false)}
-        onSuccess={() => { fetchPage(0); }}
       />
     </div>
   );
@@ -500,17 +349,6 @@ const buttonStyle = (bg: string) => ({
   transition: 'opacity 0.15s',
 });
 
-const actionButtonStyle = (color: string) => ({
-  background: 'none',
-  border: 'none',
-  fontSize: 16,
-  cursor: 'pointer',
-  padding: '4px 8px',
-  borderRadius: 6,
-  transition: 'background 0.1s',
-  color,
-});
-
 const paginationButtonStyle = {
   padding: '6px 12px',
   borderRadius: 8,
@@ -519,21 +357,4 @@ const paginationButtonStyle = {
   cursor: 'pointer',
   fontSize: 13,
   transition: 'all 0.1s'
-};
-
-const modalOverlayStyle = {
-  position: 'fixed' as const,
-  top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.5)',
-  display: 'flex', justifyContent: 'center', alignItems: 'center',
-  zIndex: 1000
-};
-
-const modalContentStyle = {
-  background: '#fff',
-  borderRadius: 16,
-  padding: 24,
-  width: '90%',
-  maxWidth: 400,
-  boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
 };

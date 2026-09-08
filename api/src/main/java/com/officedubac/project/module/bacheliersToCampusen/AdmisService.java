@@ -16,7 +16,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,27 @@ public class AdmisService
 
     private final BacheliersAdmisRepository bacheliersAdmisRepository;
     private final MongoTemplate mongoTemplate;
+
+    /** Liste simple paginée, sans notion de session : les données sont sessionnières
+     *  (une seule session en base à la fois, purgée après exploitation) — donc pas besoin
+     *  de filtrer par année, comme la liste de nouveauBachelier. */
+    public Page<BacheliersToCampusen> findAllPaginated(int page, int size, String search) {
+        Query query = new Query();
+        if (search != null && !search.isBlank()) {
+            String regex = Pattern.quote(search.trim());
+            query.addCriteria(new Criteria().orOperator(
+                    Criteria.where("nom").regex(regex, "i"),
+                    Criteria.where("prenoms").regex(regex, "i"),
+                    Criteria.where("numeroTable").regex(regex, "i"),
+                    Criteria.where("telephone").regex(regex, "i")
+            ));
+        }
+        long total = mongoTemplate.count(query, BacheliersToCampusen.class);
+        Pageable pageable = pageable(page, size);
+        query.with(pageable);
+        List<BacheliersToCampusen> contenu = mongoTemplate.find(query, BacheliersToCampusen.class);
+        return new org.springframework.data.domain.PageImpl<>(contenu, pageable, total);
+    }
 
     public Page<BacheliersToCampusen> parAnnee(int annee, int page, int taille) {
         verifierAnnee(annee);
@@ -49,12 +72,27 @@ public class AdmisService
                         "Aucun admis avec le n° de table " + numeroTable + " en " + annee));
     }
 
-    public Page<BacheliersToCampusen> rechercher(int annee, String nom, String prenom, String serie, int page, int taille) {
+    /** Recherche paginée au sein d'une session (annee) : texte libre (nom, prénoms, n° table,
+     *  téléphone) combiné à un filtre optionnel de série — même logique que la recherche
+     *  serveur de nouveauBachelier. */
+    public Page<BacheliersToCampusen> rechercher(int annee, String search, String serie, int page, int taille) {
         verifierAnnee(annee);
-        Criteria criteria = Criteria.where("annee").is(annee);
-        if (serie != null && !serie.isBlank()) criteria = criteria.and("serie").is(serie);
-        if (nom != null && !nom.isBlank()) criteria = criteria.and("nom").regex(nom.trim(), "i");
-        if (prenom != null && !prenom.isBlank()) criteria = criteria.and("prenoms").regex(prenom.trim(), "i");
+
+        List<Criteria> criterias = new ArrayList<>();
+        criterias.add(Criteria.where("annee").is(annee));
+        if (serie != null && !serie.isBlank()) {
+            criterias.add(Criteria.where("serie").is(serie));
+        }
+        if (search != null && !search.isBlank()) {
+            String regex = Pattern.quote(search.trim());
+            criterias.add(new Criteria().orOperator(
+                    Criteria.where("nom").regex(regex, "i"),
+                    Criteria.where("prenoms").regex(regex, "i"),
+                    Criteria.where("numeroTable").regex(regex, "i"),
+                    Criteria.where("telephone").regex(regex, "i")
+            ));
+        }
+        Criteria criteria = new Criteria().andOperator(criterias.toArray(new Criteria[0]));
 
         Pageable pageable = pageable(page, taille);
         Query query = Query.query(criteria).with(pageable);
@@ -76,13 +114,13 @@ public class AdmisService
     }
 
     public List<Integer> anneesDisponibles() {
-        return mongoTemplate.findDistinct(new Query(), "annee", "candidats", Integer.class)
+        return mongoTemplate.findDistinct(new Query(), "annee", BacheliersToCampusen.class, Integer.class)
                 .stream().sorted().toList();
     }
 
     private List<String> seriesDisponibles(int annee) {
         return mongoTemplate.findDistinct(
-                Query.query(Criteria.where("annee").is(annee)), "serie", "candidats", String.class)
+                Query.query(Criteria.where("annee").is(annee)), "serie", BacheliersToCampusen.class, String.class)
                 .stream().sorted().toList();
     }
 

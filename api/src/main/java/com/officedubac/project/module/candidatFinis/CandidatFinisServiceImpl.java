@@ -249,7 +249,8 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String statutResultat,
             String sexe,
             String nationalite,
-            String etablissementCode) {
+            String etablissementCode,
+            Boolean remplacement) {
 
         Query query = new Query();
         List<Criteria> criteriaList = new ArrayList<>();
@@ -300,6 +301,12 @@ public Etablissement getEtablissementUtilisateurConnecte() {
 
         if (StringUtils.hasText(nationalite)) {
             criteriaList.add(Criteria.where("nationalite").regex(".*" + nationalite + ".*", "i"));
+        }
+
+        // ✅ Session de remplacement : filtre optionnel — absent (null), la gestion
+        // normale continue de tout afficher (remplacement inclus), comme avant.
+        if (remplacement != null) {
+            criteriaList.add(Criteria.where("remplacement").is(remplacement));
         }
 
         if (!criteriaList.isEmpty()) {
@@ -426,7 +433,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAll(Pageable pageable) {
         log.info("Fetching all candidats with epreuves, pagination: {}", pageable);
-        return getWithFilters(null, null, null, null, null, null, null,null, null,pageable);
+        return getWithFilters(null, null, null, null, null, null, null,null, null, null, pageable);
     }
 
     @Override
@@ -440,6 +447,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String sexe,
             String nationalite,
             String etablissementCode,
+            Boolean remplacement,
             Pageable pageable) {
 
         log.info("Fetching candidats with filters:");
@@ -452,6 +460,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         log.info("  - sexe: {}", sexe);
         log.info("  - nationalite: {}", nationalite);
         log.info("  - etablissementCode: {}", etablissementCode);
+        log.info("  - remplacement: {}", remplacement);
 
         // ⚠️ IMPORTANT : L'ordre des paramètres DOIT correspondre exactement
         // à la définition de buildFilterQuery
@@ -464,7 +473,8 @@ public Etablissement getEtablissementUtilisateurConnecte() {
                 statutResultat,   // 6 ←
                 sexe,             // 7
                 nationalite,      // 8
-                etablissementCode // 9
+                etablissementCode, // 9
+                remplacement      // 10
         );
 
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
@@ -486,13 +496,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             return getAll(pageable);
         }
 
-        return getWithFilters(keyword.trim(), null, null, null, null, null, null,null,null, pageable);
+        return getWithFilters(keyword.trim(), null, null, null, null, null, null,null,null, null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getBySerie(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie with epreuves: {}", serieCode);
-        return getWithFilters(null, serieCode, null, null, null, null, null,null,null, pageable);
+        return getWithFilters(null, serieCode, null, null, null, null, null,null,null, null, pageable);
     }
 
     @Override
@@ -545,7 +555,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getByJury(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury with epreuves: {}", jury);
-        return getWithFilters(null, null, jury, null, null, null, null,null, null,pageable);
+        return getWithFilters(null, null, jury, null, null, null, null,null, null, null, pageable);
     }
 
     // ==================== MÉTHODES AVEC FILTRE ÉTABLISSEMENT ====================
@@ -574,7 +584,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         Etablissement etablissement = getEtablissementUtilisateurConnecte();
 
         Query query =  buildFilterQuery(keyword, serie, jury, typeCandidat, numeroDossier,
-                statutResultat, sexe, nationalite, etablissementCode);
+                statutResultat, sexe, nationalite, etablissementCode, null);
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
@@ -975,7 +985,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
 
         Query query = buildFilterQuery(keyword, serie, jury, null, typeCandidat,
-                statutResultat, sexe, nationalite, etablissementCode);
+                statutResultat, sexe, nationalite, etablissementCode, null);
         query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
                 .is(new ObjectId(inspectionAcademie.getId())));
 
