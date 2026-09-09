@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,7 +32,7 @@ public class JourInitialisationService {
             return;
         }
 
-        // ==================== BAC GÉNÉRAL (J1 à J10) ====================
+        // ==================== BAC GÉNÉRAL 1er GROUPE (J1 à J10) ====================
         for (int i = 1; i <= 10; i++) {
             String code = "J" + i;
             Jour jour = Jour.builder()
@@ -45,7 +46,7 @@ public class JourInitialisationService {
             log.debug("Jour créé: {} - type: BAC_GENERAL", code);
         }
 
-        // ==================== BAC TECHNIQUE (J01 à J10) ====================
+        // ==================== BAC TECHNIQUE 1er GROUPE (J01 à J10) ====================
         for (int i = 1; i <= 10; i++) {
             String code = String.format("J%02d", i);
             Jour jour = Jour.builder()
@@ -57,6 +58,34 @@ public class JourInitialisationService {
                     .build();
             jourRepository.save(jour);
             log.debug("Jour créé: {} - type: BAC_TECHNIQUE", code);
+        }
+
+        // ==================== BAC GÉNÉRAL 2ème GROUPE (Y1 à Y10) ====================
+        for (int i = 1; i <= 10; i++) {
+            String code = "Y" + i;
+            Jour jour = Jour.builder()
+                    .code(code)
+                    .name("")
+                    .date(null)
+                    .ordre(200 + i)
+                    .type("BAC_GENERAL_2TOUR")
+                    .build();
+            jourRepository.save(jour);
+            log.debug("Jour créé: {} - type: BAC_GENERAL_2TOUR", code);
+        }
+
+        // ==================== BAC TECHNIQUE 2ème GROUPE (Y01 à Y10) ====================
+        for (int i = 1; i <= 10; i++) {
+            String code = String.format("Y%02d", i);
+            Jour jour = Jour.builder()
+                    .code(code)
+                    .name("")
+                    .date(null)
+                    .ordre(300 + i)
+                    .type("BAC_TECHNIQUE_2TOUR")
+                    .build();
+            jourRepository.save(jour);
+            log.debug("Jour créé: {} - type: BAC_TECHNIQUE_2TOUR", code);
         }
 
         // ==================== EPS ====================
@@ -80,6 +109,7 @@ public class JourInitialisationService {
                 .build();
         jourRepository.save(lafac);
         log.debug("Jour créé: JLAFAC - type: FACULTATIVE");
+
         Jour jprjt = Jour.builder()
                 .code("JPRJT")
                 .name("")
@@ -112,20 +142,28 @@ public class JourInitialisationService {
 
         int updatedCount = 0;
 
-        // 1. Mettre à jour les jours du bac général (type = BAC_GENERAL)
+        // 1. Bac général 1er groupe (J1...)
         updatedCount += updateJoursByType("BAC_GENERAL", request.getDateBacGeneralStart());
 
-        // 2. Mettre à jour les jours du bac technique (type = BAC_TECHNIQUE)
+        // 2. Bac technique 1er groupe (J01...)
         updatedCount += updateJoursByType("BAC_TECHNIQUE", request.getDateBacTechniqueStart());
 
-        // 3. Mettre à jour EPS (type = EPS)
+        // 3. Bac général 2ème groupe (Y1...)
+        updatedCount += updateJoursByType("BAC_GENERAL_2TOUR", request.getDateBacGeneralDTour());
+
+        // 4. Bac technique 2ème groupe (Y01...)
+        updatedCount += updateJoursByType("BAC_TECHNIQUE_2TOUR", request.getDateBacTechniqueDTour());
+
+        // 5. EPS
         updatedCount += updateJourByTypeAndCode("EPS", "JEPS", request.getDateEPS());
 
-        // 4. Mettre à jour LAFAC (type = FACULTATIVE)
+        // 6. LAFAC
         updatedCount += updateJourByTypeAndCode("FACULTATIVE", "JLAFAC", request.getDateLAFAC());
 
-        // 5. Mettre à jour LBFAC (type = FACULTATIVE)
+        // 7. LBFAC
         updatedCount += updateJourByTypeAndCode("FACULTATIVE", "JLBFAC", request.getDateLBFAC());
+
+        // 8. JPRJT
         updatedCount += updateJourByTypeAndCode("PRJT", "JPRJT", request.getDateJPRJT());
 
         log.info("{} jours mis à jour avec succès", updatedCount);
@@ -151,11 +189,11 @@ public class JourInitialisationService {
         for (Jour jour : jours) {
             String code = jour.getCode();
             int numero = extractNumberFromCode(code, type);
-            LocalDate date = startDate.plusDays(numero - 1);
+            LocalDate date = addJoursOuvrablesSansDimanche(startDate, numero);
             String name = formatDate(date);
 
             jour.setName(name);
-            jour.setDate(date);  // ✅ Ajout de la date
+            jour.setDate(date);
             jourRepository.save(jour);
 
             // CASCADE: Mettre à jour les épreuves qui utilisent ce jour
@@ -170,6 +208,26 @@ public class JourInitialisationService {
     }
 
     /**
+     * Calcule la date du n-ième jour ouvrable à partir de startDate, en sautant
+     * les dimanches (ni le point de départ ni les jours intermédiaires ne
+     * tombent un dimanche). numero=1 -> startDate (ajustée si dimanche).
+     */
+    private LocalDate addJoursOuvrablesSansDimanche(LocalDate startDate, int numero) {
+        LocalDate date = skipSunday(startDate);
+        for (int i = 1; i < numero; i++) {
+            date = skipSunday(date.plusDays(1));
+        }
+        return date;
+    }
+
+    private LocalDate skipSunday(LocalDate date) {
+        while (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            date = date.plusDays(1);
+        }
+        return date;
+    }
+
+    /**
      * Met à jour un jour spécifique par son type et son code
      */
     private int updateJourByTypeAndCode(String type, String code, LocalDate date) {
@@ -181,7 +239,7 @@ public class JourInitialisationService {
         return jourRepository.findByTypeAndCode(type, code).map(jour -> {
             String name = formatDate(date);
             jour.setName(name);
-            jour.setDate(date);  // ✅ Ajout de la date
+            jour.setDate(date);
             jourRepository.save(jour);
 
             // CASCADE: Mettre à jour les épreuves qui utilisent ce jour
@@ -194,16 +252,24 @@ public class JourInitialisationService {
 
     /**
      * Extrait le numéro du code en fonction du type
+     * J1  -> 1  (BAC_GENERAL)
+     * J01 -> 1  (BAC_TECHNIQUE)
+     * Y1  -> 1  (BAC_GENERAL_2TOUR)
+     * Y01 -> 1  (BAC_TECHNIQUE_2TOUR)
      */
     private int extractNumberFromCode(String code, String type) {
-        if (type.equals("BAC_GENERAL")) {
-            // J1 -> 1, J2 -> 2
-            return Integer.parseInt(code.substring(1));
-        } else if (type.equals("BAC_TECHNIQUE")) {
-            // J01 -> 1, J02 -> 2
-            return Integer.parseInt(code.substring(2));
+        switch (type) {
+            case "BAC_GENERAL":
+                return Integer.parseInt(code.substring(1));
+            case "BAC_TECHNIQUE":
+                return Integer.parseInt(code.substring(2));
+            case "BAC_GENERAL_2TOUR":
+                return Integer.parseInt(code.substring(1));
+            case "BAC_TECHNIQUE_2TOUR":
+                return Integer.parseInt(code.substring(2));
+            default:
+                return 1;
         }
-        return 1;
     }
 
     /**
@@ -213,10 +279,8 @@ public class JourInitialisationService {
     public boolean updateJourName(String code, String name) {
         return jourRepository.findByCode(code).map(jour -> {
             jour.setName(name);
-            // Note: la date reste inchangée, seulement le nom d'affichage
             jourRepository.save(jour);
 
-            // CASCADE: Mettre à jour les épreuves qui utilisent ce jour
             epreuveCascadeService.updateEpreuvesWithJour(jour);
 
             log.info("Jour {} mis à jour: {} (cascade vers épreuves)", code, name);
@@ -234,10 +298,9 @@ public class JourInitialisationService {
         return jourRepository.findByCode(code).map(jour -> {
             String name = formatDate(date);
             jour.setName(name);
-            jour.setDate(date);  // ✅ Ajout de la date
+            jour.setDate(date);
             jourRepository.save(jour);
 
-            // CASCADE: Mettre à jour les épreuves qui utilisent ce jour
             epreuveCascadeService.updateEpreuvesWithJour(jour);
 
             log.info("Jour {} mis à jour: {} -> {} (cascade vers épreuves)", code, name, date);

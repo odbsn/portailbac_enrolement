@@ -174,6 +174,11 @@ const AppMenu = () => {
           icon: "pi pi-fw pi-database",
           to: "/planification/data-and-output",
         },
+        hasAccess(["ADMIN"]) && {
+          label: "Calendrier des épreuves",
+          icon: "pi pi-fw pi-calendar",
+          to: "/planification/epreuve",
+        },
       ].filter(Boolean),
     },
     hasAccess([

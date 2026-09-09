@@ -561,21 +561,23 @@ export default function EspaceCandidat() {
               </TabPanel>
               <TabPanel header="Informations" leftIcon="pi pi-user mr-2">
                 <div className="p-1 md:p-2">
-                  {/* Bouton Télécharger la convocation */}
+                  {/* Bouton Télécharger la convocation
+                      ⚠️ Temporairement désactivé : la génération de convocation
+                      n'est pas encore à jour côté espace candidat. Réactiver
+                      onClick={handleDownloadConvocation} et le style bleu
+                      d'origine quand ce sera prêt. */}
                   <div className="flex justify-content-end mb-2">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Button
-                        label="Télécharger ma convocation"
+                        label="Téléchargement indisponible (mise à jour en cours)"
                         icon="pi pi-download"
-                        onClick={handleDownloadConvocation}
+                        disabled
                         className="p-button-rounded"
-                        // disabled={true}
                         style={{
-                          background:
-                            "linear-gradient(135deg, #2196f3 0%, #1565C0 100%)",
+                          background: "#bdbdbd",
                           border: "none",
                           borderRadius: "50px",
                           padding: "0.75rem 1.5rem",
