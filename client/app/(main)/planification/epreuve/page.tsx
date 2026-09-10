@@ -555,9 +555,15 @@ function EpreuveFormDialog({
                 </div>
                 <div className="col-6">
                     <label className="block text-sm font-medium mb-1">Type *</label>
+                    {/* ✅ editable : les types viennent aussi de l'import Excel (texte
+                        libre, ex: "Ecrit", "ECRIT", "Oral/Pratique"...) et ne
+                        correspondent pas toujours à l'une des 2 options ci-dessous —
+                        sans "editable" la valeur existante s'affiche vide au lieu de
+                        montrer le texte réel. */}
                     <Dropdown
                         value={form.type}
                         options={EPREUVE_TYPE_OPTIONS}
+                        editable
                         className="w-full"
                         onChange={(e) => setForm((f) => ({ ...f, type: e.value }))}
                     />
