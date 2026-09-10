@@ -77,6 +77,28 @@ export interface PageResponse<T> {
     };
 }
 
+// ✅ Le mode de sérialisation Jackson de Page<T> dépend de la config Spring
+// Data (spring.data.web.pageable.serialization-mode) : soit imbriqué sous
+// "page" ({content, page:{size,number,totalElements,totalPages}}), soit à
+// plat ({content, size, number, totalElements, totalPages, ...}). On
+// normalise systématiquement vers la forme imbriquée pour que le reste du
+// code (page.tsx) n'ait à connaître qu'une seule forme — évite que la
+// pagination reste silencieusement à 0/masquée si le format change.
+function normalizePage<T>(raw: any): PageResponse<T> {
+    if (raw && raw.page && typeof raw.page === 'object') {
+        return raw as PageResponse<T>;
+    }
+    return {
+        content: raw?.content ?? [],
+        page: {
+            size: raw?.size ?? raw?.pageSize ?? 20,
+            number: raw?.number ?? raw?.pageNumber ?? 0,
+            totalElements: raw?.totalElements ?? 0,
+            totalPages: raw?.totalPages ?? 0,
+        },
+    };
+}
+
 // ✅ Une ligne d'erreur ou d'ignoré — reflète ImportError/IgnoredRecord côté
 // backend. `dto` contient le détail complet de la ligne Excel d'origine
 // (toutes ses colonnes), pour la traçabilité.
@@ -296,10 +318,10 @@ export const useJourEpreuveStore = create<JourEpreuveState>((set, get) => ({
             if (currentFilters.autorisation !== undefined) params.autorisation = currentFilters.autorisation;
             if (currentFilters.estDominant !== undefined) params.estDominant = currentFilters.estDominant;
 
-            const { data } = await axiosInstance.get<PageResponse<EpreuveResponse>>(
+            const { data } = await axiosInstance.get<any>(
                 '/epreuves/filters', { params }
             );
-            set({ epreuves: data });
+            set({ epreuves: normalizePage<EpreuveResponse>(data) });
         } catch (err: any) {
             set({ epreuvesError: err.response?.data?.message ?? 'Erreur lors du chargement des épreuves' });
         } finally {

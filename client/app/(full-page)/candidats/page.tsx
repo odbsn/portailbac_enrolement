@@ -401,6 +401,130 @@ export default function EspaceCandidat() {
               onTabChange={(e) => setActiveIndex(e.index)}
               className="custom-tabview mt-2"
             >
+              <TabPanel header="Informations" leftIcon="pi pi-user mr-2">
+                <div className="p-1 md:p-2">
+                  {/* Bouton Télécharger la convocation
+                      ⚠️ Temporairement désactivé : la génération de convocation
+                      n'est pas encore à jour côté espace candidat. Réactiver
+                      onClick={handleDownloadConvocation} et le style bleu
+                      d'origine quand ce sera prêt. */}
+                  <div className="flex justify-content-end mb-2">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        label="Téléchargement indisponible (mise à jour en cours)"
+                        icon="pi pi-download"
+                        disabled
+                        className="p-button-rounded"
+                        style={{
+                          background: "#bdbdbd",
+                          border: "none",
+                          borderRadius: "50px",
+                          padding: "0.75rem 1.5rem",
+                        }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Les 3 blocs d'informations */}
+                  <div className="three-blocks-container">
+                    {/* Bloc 1: Informations personnelles */}
+                    <InfoBlock title="INFORMATIONS PERSONNELLES">
+                      <InfoRow label="Prénom(s)" value={candidat?.prenoms} />
+                      <InfoRow label="Nom" value={candidat?.nom} />
+                      <InfoRow
+                        label="Date de naissance"
+                        value={candidat?.dateNaissance}
+                      />
+                      <InfoRow
+                        label="Lieu de naissance"
+                        value={candidat?.lieuNaissance}
+                      />
+                      <InfoRow label="Sexe" value={candidat?.sexe} />
+                      <InfoRow
+                        label="Nationalité"
+                        value={candidat?.nationalite}
+                      />
+                    </InfoBlock>
+
+                    {/* Bloc 2: Informations scolaires (avec les matières) */}
+                    <InfoBlock title="INFORMATIONS SCOLAIRES">
+                      <InfoRow label="Série" value={candidat?.serie} />
+                      <InfoRow
+                        label="Type de candidat"
+                        value={candidat?.typeCandidat}
+                      />
+                      <InfoRow
+                        label="EPS"
+                        value={
+                          candidat?.eps === "A"
+                            ? "Apte"
+                            : candidat?.eps === "I"
+                            ? "Inapte"
+                            : candidat?.eps || "-"
+                        }
+                      />
+                      <InfoRow
+                        label="Établissement fréquenté"
+                        value={candidat?.etablissementName}
+                      />
+
+                      {/* Matières optionnelles avec libellés corrects */}
+                      {matieresOptionnelles.map((matiere: any, idx: number) => (
+                        <InfoRow
+                          key={`mo-${idx}`}
+                          label={getOptionLabel(idx, candidat?.serie)}
+                          value={matiere?.nom}
+                        />
+                      ))}
+
+                      {/* Matières facultatives */}
+                      {matieresFacultatives.map((matiere: any, idx: number) => (
+                        <InfoRow
+                          key={`ef-${idx}`}
+                          label={getFacultativeLabel(idx)}
+                          value={matiere?.nom}
+                        />
+                      ))}
+
+                      {/* {candidat?.centreMatFac1 && candidat?.libMatFac1 && (
+                        <InfoRow
+                          label={`Centre ${candidat.libMatFac1}`}
+                          value={candidat.centreMatFac1}
+                        />
+                      )}
+                      {candidat?.centreMatFac2 && candidat?.libMatFac2 && (
+                        <InfoRow
+                          label={`Centre ${candidat.libMatFac2}`}
+                          value={candidat.centreMatFac2}
+                        />
+                      )} */}
+                    </InfoBlock>
+
+                    {/* Bloc 3: Informations de la candidature */}
+                    <InfoBlock title="INFORMATIONS DE LA CANDIDATURE">
+                      <InfoRow
+                        label="Numéro de table"
+                        value={candidat?.numeroTable}
+                      />
+                      <InfoRow label="Jury" value={candidat?.jury} />
+                      <InfoRow
+                        label="Centre EPS"
+                        value={candidat?.centreActEPSName}
+                      />
+                      <InfoRow
+                        label="Centre d'écrit"
+                        value={
+                          candidat?.centreEcritName ||
+                          candidat?.centreEcritParticulier
+                        }
+                      />
+                    </InfoBlock>
+                  </div>
+                </div>
+              </TabPanel>
               <TabPanel
                 header="Mon résultat au Bac"
                 leftIcon="pi pi-chart-line mr-2"
@@ -557,130 +681,6 @@ export default function EspaceCandidat() {
                       </p>
                     </div>
                   )}
-                </div>
-              </TabPanel>
-              <TabPanel header="Informations" leftIcon="pi pi-user mr-2">
-                <div className="p-1 md:p-2">
-                  {/* Bouton Télécharger la convocation
-                      ⚠️ Temporairement désactivé : la génération de convocation
-                      n'est pas encore à jour côté espace candidat. Réactiver
-                      onClick={handleDownloadConvocation} et le style bleu
-                      d'origine quand ce sera prêt. */}
-                  <div className="flex justify-content-end mb-2">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button
-                        label="Téléchargement indisponible (mise à jour en cours)"
-                        icon="pi pi-download"
-                        disabled
-                        className="p-button-rounded"
-                        style={{
-                          background: "#bdbdbd",
-                          border: "none",
-                          borderRadius: "50px",
-                          padding: "0.75rem 1.5rem",
-                        }}
-                      />
-                    </motion.div>
-                  </div>
-
-                  {/* Les 3 blocs d'informations */}
-                  <div className="three-blocks-container">
-                    {/* Bloc 1: Informations personnelles */}
-                    <InfoBlock title="INFORMATIONS PERSONNELLES">
-                      <InfoRow label="Prénom(s)" value={candidat?.prenoms} />
-                      <InfoRow label="Nom" value={candidat?.nom} />
-                      <InfoRow
-                        label="Date de naissance"
-                        value={candidat?.dateNaissance}
-                      />
-                      <InfoRow
-                        label="Lieu de naissance"
-                        value={candidat?.lieuNaissance}
-                      />
-                      <InfoRow label="Sexe" value={candidat?.sexe} />
-                      <InfoRow
-                        label="Nationalité"
-                        value={candidat?.nationalite}
-                      />
-                    </InfoBlock>
-
-                    {/* Bloc 2: Informations scolaires (avec les matières) */}
-                    <InfoBlock title="INFORMATIONS SCOLAIRES">
-                      <InfoRow label="Série" value={candidat?.serie} />
-                      <InfoRow
-                        label="Type de candidat"
-                        value={candidat?.typeCandidat}
-                      />
-                      <InfoRow
-                        label="EPS"
-                        value={
-                          candidat?.eps === "A"
-                            ? "Apte"
-                            : candidat?.eps === "I"
-                            ? "Inapte"
-                            : candidat?.eps || "-"
-                        }
-                      />
-                      <InfoRow
-                        label="Établissement fréquenté"
-                        value={candidat?.etablissementName}
-                      />
-
-                      {/* Matières optionnelles avec libellés corrects */}
-                      {matieresOptionnelles.map((matiere: any, idx: number) => (
-                        <InfoRow
-                          key={`mo-${idx}`}
-                          label={getOptionLabel(idx, candidat?.serie)}
-                          value={matiere?.nom}
-                        />
-                      ))}
-
-                      {/* Matières facultatives */}
-                      {matieresFacultatives.map((matiere: any, idx: number) => (
-                        <InfoRow
-                          key={`ef-${idx}`}
-                          label={getFacultativeLabel(idx)}
-                          value={matiere?.nom}
-                        />
-                      ))}
-
-                      {/* {candidat?.centreMatFac1 && candidat?.libMatFac1 && (
-                        <InfoRow
-                          label={`Centre ${candidat.libMatFac1}`}
-                          value={candidat.centreMatFac1}
-                        />
-                      )}
-                      {candidat?.centreMatFac2 && candidat?.libMatFac2 && (
-                        <InfoRow
-                          label={`Centre ${candidat.libMatFac2}`}
-                          value={candidat.centreMatFac2}
-                        />
-                      )} */}
-                    </InfoBlock>
-
-                    {/* Bloc 3: Informations de la candidature */}
-                    <InfoBlock title="INFORMATIONS DE LA CANDIDATURE">
-                      <InfoRow
-                        label="Numéro de table"
-                        value={candidat?.numeroTable}
-                      />
-                      <InfoRow label="Jury" value={candidat?.jury} />
-                      <InfoRow
-                        label="Centre EPS"
-                        value={candidat?.centreActEPSName}
-                      />
-                      <InfoRow
-                        label="Centre d'écrit"
-                        value={
-                          candidat?.centreEcritName ||
-                          candidat?.centreEcritParticulier
-                        }
-                      />
-                    </InfoBlock>
-                  </div>
                 </div>
               </TabPanel>
             </TabView>

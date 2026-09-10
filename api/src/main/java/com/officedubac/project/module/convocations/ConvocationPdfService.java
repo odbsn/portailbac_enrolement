@@ -47,7 +47,16 @@ public class ConvocationPdfService {
     private Jour jourEPSCache;
     private final Map<String, List<EpreuveResponse>> epreuvesCache = new ConcurrentHashMap<>();
 
-    private Cell createLabel(String text, PdfFont font) {
+    private Paragraph createLabel(String text, PdfFont font) {
+        return new Paragraph(text)
+                .setFont(font)
+                .setFontSize(8)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginTop(0)
+                .setMarginBottom(0);
+    }
+
+    private Cell createValue(String text, PdfFont font) {
         return new Cell()
                 .add(new Paragraph(text)
                         .setFont(font)
@@ -57,15 +66,6 @@ public class ConvocationPdfService {
                 .setBorder(new SolidBorder(ColorConstants.BLACK, 0.5f))
                 .setBorderRadius(new BorderRadius(8))
                 .setPadding(2)
-                .setMarginBottom(0);
-    }
-
-    private Paragraph createValue(String text, PdfFont font) {
-        return new Paragraph(text)
-                .setFont(font)
-                .setFontSize(8)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMarginTop(0)
                 .setMarginBottom(0);
     }
     private String value(String v) {
@@ -258,8 +258,9 @@ public class ConvocationPdfService {
         leftColumn.add(createValue(value(c.getLieuNaissance()), boldFont));
 
         String etabName = c.getEtablissement() != null ? c.getEtablissement().getName() : "-";
-        leftColumn.add(createLabel("Etablissement fréquenté", normalFont));
-        leftColumn.add(createValue(etabName, boldFont));
+        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()) : "-";
+        leftColumn.add(createLabel("Etablissement fréquenté (Code)", normalFont));
+        leftColumn.add(createValue(etabName + " (" + etabCode + ")", boldFont));
 
         leftColumn.add(createLabel("Candidat", normalFont));
         leftColumn.add(createValue(value(c.getTypeCandidat()), boldFont));
@@ -871,8 +872,9 @@ public class ConvocationPdfService {
         leftColumn.add(createValue(value(c.getLieuNaissance()), boldFont));
 
         String etabName = c.getEtablissement() != null ? c.getEtablissement().getName() : "-";
-        leftColumn.add(createLabel("Etablissement fréquenté", normalFont));
-        leftColumn.add(createValue(etabName, boldFont));
+        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()) : "-";
+        leftColumn.add(createLabel("Etablissement fréquenté (Code)", normalFont));
+        leftColumn.add(createValue(etabName + " (" + etabCode + ")", boldFont));
 
         leftColumn.add(createLabel("Candidat", normalFont));
         leftColumn.add(createValue(value(c.getTypeCandidat()), boldFont));
