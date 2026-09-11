@@ -479,6 +479,7 @@ public class ParametrageService
                 .edition(programmationDTO.getEdition())
                 .date_start(programmationDTO.getDate_start())
                 .date_end(programmationDTO.getDate_end())
+                .dateResultats(programmationDTO.getDateResultats())
                 .bfem_IfEPI(programmationDTO.getBfemEPI())
                 .bfem_IfI(programmationDTO.getBfemI())
                 .codeSup1(programmationDTO.getCodeSup1())
@@ -529,6 +530,7 @@ public class ParametrageService
         {
             update_prg.setDate_start(programmationDTO.getDate_start());
             update_prg.setDate_end(programmationDTO.getDate_end());
+            update_prg.setDateResultats(programmationDTO.getDateResultats());
             update_prg.setCodeSup1(programmationDTO.getCodeSup1());
             update_prg.setCodeSup2(programmationDTO.getCodeSup2());
             update_prg.setPublicKey(programmationDTO.getPublicKey());
@@ -549,6 +551,14 @@ public class ParametrageService
 
     public Programmation getDerniereProg() {
         return programmationRepository.findTopByOrderByIdDesc();
+    }
+
+    // ✅ Endpoint public dédié (espace candidat) : ne renvoie QUE la date de
+    // résultats, jamais l'objet Programmation complet qui contient
+    // publicKey/secretKey.
+    public java.time.LocalDate getDateResultats() {
+        Programmation derniere = getDerniereProg();
+        return derniere != null ? derniere.getDateResultats() : null;
     }
 
 

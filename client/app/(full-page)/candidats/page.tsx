@@ -15,6 +15,7 @@ import {
   NouveauBachelierResponse,
   useNouveauBachelierStore,
 } from "@/app/(main)/convocations/nouveauBachelierStore";
+import axiosInstance from "@/app/api/axiosInstance";
 
 interface CandidatInfo {
   prenoms?: string;
@@ -138,6 +139,7 @@ export default function EspaceCandidat() {
   const [resultatBac, setResultatBac] =
     useState<NouveauBachelierResponse | null>(null);
   const [isLoadingResultat, setIsLoadingResultat] = useState(false);
+  const [dateResultats, setDateResultats] = useState<string | null>(null);
   const { searchByNumeroTable } = useNouveauBachelierStore();
 
   const {
@@ -209,6 +211,40 @@ export default function EspaceCandidat() {
 
     fetchResultat();
   }, [candidatInfo?.numeroTable, searchByNumeroTable]);
+
+  // ✅ Date de proclamation des résultats — configurée dans l'admin
+  // (Éditions système > Programmation), plutôt qu'en dur dans le code.
+  useEffect(() => {
+    const fetchDateResultats = async () => {
+      try {
+        const { data } = await axiosInstance.get("/parametrage/date-resultats");
+        setDateResultats(data?.dateResultats ?? null);
+      } catch (error) {
+        console.error("Erreur lors de la récupération de la date des résultats:", error);
+      }
+    };
+
+    fetchDateResultats();
+  }, []);
+
+  const formatDateResultatsLongue = (date: string | null): string => {
+    if (!date) return "prochainement";
+    try {
+      // Parse manuel (année/mois/jour en heure locale) pour éviter le
+      // décalage de fuseau horaire de `new Date("yyyy-MM-dd")` (interprétée
+      // en UTC, ce qui peut afficher la veille selon le fuseau du visiteur).
+      const [year, month, day] = date.split("-").map(Number);
+      const local = new Date(year, month - 1, day);
+      return local.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return "prochainement";
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("candidat_info");
@@ -403,23 +439,20 @@ export default function EspaceCandidat() {
             >
               <TabPanel header="Informations" leftIcon="pi pi-user mr-2">
                 <div className="p-1 md:p-2">
-                  {/* Bouton Télécharger la convocation
-                      ⚠️ Temporairement désactivé : la génération de convocation
-                      n'est pas encore à jour côté espace candidat. Réactiver
-                      onClick={handleDownloadConvocation} et le style bleu
-                      d'origine quand ce sera prêt. */}
+                  {/* Bouton Télécharger la convocation */}
                   <div className="flex justify-content-end mb-2">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Button
-                        label="Téléchargement indisponible (mise à jour en cours)"
+                        label="Télécharger ma convocation"
                         icon="pi pi-download"
-                        disabled
+                        onClick={handleDownloadConvocation}
                         className="p-button-rounded"
                         style={{
-                          background: "#bdbdbd",
+                          background:
+                            "linear-gradient(135deg, #2196f3 0%, #1565C0 100%)",
                           border: "none",
                           borderRadius: "50px",
                           padding: "0.75rem 1.5rem",
@@ -677,7 +710,8 @@ export default function EspaceCandidat() {
                     <div className="text-center p-4">
                       <i className="pi pi-chart-line text-4xl text-500 mb-3"></i>
                       <p className="text-600">
-                        Les résultats seront disponibles au plus tard le mardi 7 juillet 2026.
+                        Les résultats seront disponibles au plus tard le{" "}
+                        {formatDateResultatsLongue(dateResultats)}.
                       </p>
                     </div>
                   )}

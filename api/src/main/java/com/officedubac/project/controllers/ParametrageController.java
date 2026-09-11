@@ -135,6 +135,14 @@ public class ParametrageController
         return ResponseEntity.ok(this.parametrageService.getProgs());
     }
 
+    @Operation(summary="Service public de récupération de la date de proclamation des résultats (espace candidat)")
+    @GetMapping(value="/date-resultats")
+    public ResponseEntity<Map<String, Object>> getDateResultats() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("dateResultats", this.parametrageService.getDateResultats());
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary="Service de listing d'une programmation en cours")
     @GetMapping(value="/programmation-last")
     public ResponseEntity<Programmation> getLastProgrammation() throws Exception {

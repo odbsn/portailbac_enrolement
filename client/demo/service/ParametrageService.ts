@@ -77,6 +77,7 @@ export interface ProgrammationDTO {
   edition : string;
   date_start : string;
   date_end : string;
+  dateResultats?: string;
   bfemEPI : number;
   bfemI : number;
   codeSup1 : string;

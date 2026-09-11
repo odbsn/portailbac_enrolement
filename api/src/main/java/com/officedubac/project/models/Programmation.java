@@ -24,6 +24,10 @@ public class Programmation
     private LocalDate date_start;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date_end;
+    // Date de proclamation des résultats du Bac, affichée dynamiquement dans
+    // l'espace candidat tant que le résultat n'est pas encore disponible.
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateResultats;
     private int bfem_IfEPI;
     private int bfem_IfI;
     private String codeSup1;

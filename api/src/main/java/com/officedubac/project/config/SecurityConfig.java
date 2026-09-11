@@ -96,6 +96,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/import-data/**").permitAll()
                         .requestMatchers("/api/v1/pdf/**").hasAnyAuthority(Role.CHEF_ETABLISSEMENT.name(), Role.AGENT_DE_SAISIE.name(), Role.SCOLARITE.name(), Role.RECEPTIONNISTE.name(), Role.ADMIN.name())
                         .requestMatchers("/swagger-ui/**","/swagger-ui.html","/v3/api-docs","/webjars/**", "/v3/api-docs/swagger-config").permitAll()
+                        .requestMatchers("/api/v1/parametrage/date-resultats").permitAll()
                         .requestMatchers("/api/v1/parametrage/**").hasAnyAuthority(Role.ADMIN.name(), Role.SCOLARITE.name())
                         .requestMatchers("/api/v1/enrollment-candidats/**").hasAnyAuthority(Role.INSPECTEUR_ACADEMIE.name(), Role.FINANCE_COMPTA.name(), Role.ADMIN.name(), Role.CHEF_ETABLISSEMENT.name(), Role.AGENT_DE_SAISIE.name(), Role.SCOLARITE.name(), Role.RECEPTIONNISTE.name(), Role.AUTORISATION_RECEPTION.name(), Role.VIGNETTES_COUPONS.name(), Role.DEMSG.name())
                         .requestMatchers("/api/v1/security/**").hasAnyAuthority(Role.ADMIN.name(), Role.CHEF_ETABLISSEMENT.name(), Role.AGENT_DE_SAISIE.name(), Role.SCOLARITE.name(), Role.RECEPTIONNISTE.name(), Role.AUTORISATION_RECEPTION.name(), Role.VIGNETTES_COUPONS.name(), Role.INSPECTEUR_ACADEMIE.name(), Role.DEMSG.name(), Role.FINANCE_COMPTA.name())

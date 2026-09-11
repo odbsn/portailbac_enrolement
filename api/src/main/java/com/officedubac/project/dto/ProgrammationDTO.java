@@ -20,6 +20,8 @@ public class ProgrammationDTO
     private LocalDate date_start;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date_end;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateResultats;
     private int bfemEPI;
     private int bfemI;
     private String codeSup1;

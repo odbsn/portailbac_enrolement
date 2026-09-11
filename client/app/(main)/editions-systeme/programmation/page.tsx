@@ -245,7 +245,8 @@ const CalendarDemo = () => {
         const progFormatted = {
             ...product,
             date_start: product.date_start,
-            date_end: product.date_end
+            date_end: product.date_end,
+            dateResultats: product.dateResultats
         };
         console.log(progFormatted);
         setProductDialog(true);
@@ -473,6 +474,7 @@ const CalendarDemo = () => {
             edition: '',
             date_start: null as Date | null,
             date_end: null as Date | null,
+            dateResultats: null as Date | null,
             codeSup1 : '',
             codeSup2 : '',
             publicKey : '',
@@ -496,11 +498,13 @@ const CalendarDemo = () => {
             const date1 = values.date_start ? new Date(values.date_start).toISOString().split('T')[0] : null;
 
             const date2 = values.date_end ? new Date(values.date_end).toISOString().split('T')[0] : null;
+            const date3 = values.dateResultats ? new Date(values.dateResultats).toISOString().split('T')[0] : null;
 
             const programmationDTO: ProgrammationDTO = {
                 edition: values.edition,
                 date_start: date1,
                 date_end: date2,
+                dateResultats: date3,
                 bfemEPI: Number(values.edition) - 3,
                 bfemI: Number(values.edition) - 4,
                 codeSup1: values.codeSup1,
@@ -657,6 +661,25 @@ const CalendarDemo = () => {
                                         />
 
                                         {formik.touched.date_end && formik.errors.date_end && <small className="p-error">{formik.errors.date_end as string}</small>}
+                                    </div>
+                                    <div className="field col-6">
+                                        <label htmlFor="dateResultats">
+                                            <b>Date de proclamation des résultats</b>
+                                        </label>
+                                        <Calendar
+                                            style={{
+                                                fontWeight: 'bold',
+                                                color: 'black'
+                                            }}
+                                            id="dateResultats"
+                                            name="dateResultats"
+                                            value={formik.values.dateResultats ? new Date(formik.values.dateResultats) : null}
+                                            onChange={(e) => formik.setFieldValue('dateResultats', e.value as Date)}
+                                            showIcon
+                                            dateFormat="dd/mm/yy"
+                                            placeholder="Choisir une date"
+                                        />
+                                        <small className="text-500">Affichée dans l&apos;espace candidat tant que le résultat n&apos;est pas disponible</small>
                                     </div>
                                 </div>
 
