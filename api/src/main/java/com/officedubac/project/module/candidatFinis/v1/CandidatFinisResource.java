@@ -231,11 +231,12 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,  // ← AJOUT
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
                 keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);  // ← AJOUT
+                etablissementCode, remplacement, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/all")
@@ -261,11 +262,12 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,  // ← AJOUT
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByUtilisateurConnecte(
                 keyword, serie, jury, numeroDossier, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);  // ← AJOUT
+                etablissementCode, remplacement, pageable);  // ← AJOUT
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/me/export")
@@ -509,13 +511,14 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         log.info("GET /api/v1/candidats/inspection-academie - Get candidats by inspection académie");
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByInspectionAcademieConnectee(
                 keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);
+                etablissementCode, remplacement, pageable);
         return ResponseEntity.ok(responses);
     }
 
@@ -530,13 +533,14 @@ public class CandidatFinisResource {
             @RequestParam(required = false) String sexe,
             @RequestParam(required = false) String nationalite,
             @RequestParam(required = false) String etablissementCode,
+            @RequestParam(required = false) Boolean remplacement,
             @PageableDefault(size = 20, sort = "nom", direction = Sort.Direction.ASC) Pageable pageable) {
 
         log.info("GET /api/v1/candidats/inspection-academie/filters - Get candidats by inspection académie with filters");
 
         PageResponse<CandidatFinisResponse> responses = candidatFinisService.getWithFiltersByInspectionAcademieConnectee(
                 keyword, serie, jury, typeCandidat, statutResultat, sexe, nationalite,
-                etablissementCode, pageable);
+                etablissementCode, remplacement, pageable);
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/inspection-academie/export")

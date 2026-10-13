@@ -148,6 +148,8 @@ export interface CandidatFinis {
   centreMatFac2?: string;
   libMatFac2?: string;
   villeMatFac2?: string;
+  // SESSION DE REMPLACEMENT
+  remplacement?: boolean;
   // Épreuves
   epreuves?: Epreuve[];
 }
@@ -171,6 +173,7 @@ export interface FilterParams {
   statutResultat?: string;
   sexe?: string;
   nationalite?: string;
+  remplacement?: boolean;
   page?: number;
   size?: number;
   sort?: string;

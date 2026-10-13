@@ -39,6 +39,7 @@ export default function CandidatInspectionAcademieList({
     setPage,
     setPageSize,
     setKeyword,
+    setFilters,
     exportCandidats,
     isExportingExcel,
     clearError,
@@ -49,6 +50,7 @@ export default function CandidatInspectionAcademieList({
   const [selectedCandidat, setSelectedCandidat] =
     useState<CandidatFinis | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [remplacementOnly, setRemplacementOnly] = useState(false);
 
   const first = currentPage * pageSize;
 
@@ -170,6 +172,26 @@ export default function CandidatInspectionAcademieList({
     if (!rowData.mention) return "-";
     return (
       <span className="font-medium text-primary">{rowData.mention}</span>
+    );
+  };
+
+  const remplacementTemplate = (rowData: CandidatFinis) => {
+    if (!rowData.remplacement) return null;
+    return (
+      <span
+        style={{
+          background: "#fff7ed",
+          color: "#c2410c",
+          border: "1px solid #fed7aa",
+          borderRadius: 999,
+          padding: "2px 8px",
+          fontSize: 11,
+          fontWeight: 600,
+          whiteSpace: "nowrap",
+        }}
+      >
+        🔁 Remplacement
+      </span>
     );
   };
 
@@ -348,6 +370,49 @@ export default function CandidatInspectionAcademieList({
           </div>
         </div>
 
+        {/* Onglets : gestion normale / session de remplacement */}
+        <div
+          className="bg-white border-bottom-1 surface-border flex"
+          style={{ padding: "0 1.5rem" }}
+        >
+          <button
+            onClick={() => {
+              setRemplacementOnly(false);
+              setFilters({ remplacement: undefined, page: 0 });
+            }}
+            style={{
+              padding: "12px 20px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: "none",
+              border: "none",
+              borderBottom: !remplacementOnly ? "2px solid #2563eb" : "2px solid transparent",
+              color: !remplacementOnly ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+            }}
+          >
+            Candidats
+          </button>
+          <button
+            onClick={() => {
+              setRemplacementOnly(true);
+              setFilters({ remplacement: true, page: 0 });
+            }}
+            style={{
+              padding: "12px 20px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: "none",
+              border: "none",
+              borderBottom: remplacementOnly ? "2px solid #ea580c" : "2px solid transparent",
+              color: remplacementOnly ? "#ea580c" : "#6b7280",
+              cursor: "pointer",
+            }}
+          >
+            🔁 Session de remplacement
+          </button>
+        </div>
+
         {/* DataTable */}
         <div className="p-0">
           <DataTable
@@ -399,6 +464,12 @@ export default function CandidatInspectionAcademieList({
               style={{ maxWidth: "6rem" }}
             />
             <Column field="serie" header="Série" style={{ maxWidth: "3rem" }} />
+            <Column
+              field="remplacement"
+              header="Session"
+              body={remplacementTemplate}
+              style={{ maxWidth: "8rem", minWidth: "6rem" }}
+            />
             <Column
               header="Mat. opt."
               body={matieresOptionnellesTemplate}

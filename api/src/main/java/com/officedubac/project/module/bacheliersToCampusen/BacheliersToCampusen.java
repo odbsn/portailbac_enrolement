@@ -19,7 +19,8 @@ import java.util.Map;
 @AllArgsConstructor
 @CompoundIndexes({
         @CompoundIndex(name = "idx_annee_serie", def = "{'annee': 1, 'serie': 1}"),
-        @CompoundIndex(name = "idx_annee_table", def = "{'annee': 1, 'numeroTable': 1}")
+        @CompoundIndex(name = "idx_annee_table", def = "{'annee': 1, 'numeroTable': 1}"),
+        @CompoundIndex(name = "idx_annee_typeSession", def = "{'annee': 1, 'typeSession': 1}")
 })
 public class BacheliersToCampusen
 {
@@ -28,6 +29,8 @@ public class BacheliersToCampusen
     private String id;
     private int annee;
     private String serie;
+    /** "Normale" ou "Remplacement" — vide à l'import = "Normale". */
+    private String typeSession;
 
     private String numeroTable;
     private String prenoms;

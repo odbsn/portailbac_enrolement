@@ -90,6 +90,7 @@ export default function BacheliersCampusenPage() {
     { key: 'nom', label: 'Nom', bold: true },
     { key: 'prenoms', label: 'Prénoms', bold: true },
     { key: 'annee', label: 'Année' },
+    { key: 'typeSession', label: 'Type session' },
     { key: 'dateNaissance', label: 'Date naissance' },
     { key: 'anneeNaissance', label: 'Année naissance' },
     { key: 'lieuNaissance', label: 'Lieu naissance' },
@@ -139,7 +140,7 @@ export default function BacheliersCampusenPage() {
       columnHelper.accessor(key as any, {
         header: label,
         cell: (info: any) => {
-          const value = info.getValue();
+          const value = key === 'typeSession' ? (info.getValue() || 'Normale') : info.getValue();
           const display = value === null || value === undefined || value === '' ? '—' : String(value);
           if (!bold && !mono) return display;
           return (

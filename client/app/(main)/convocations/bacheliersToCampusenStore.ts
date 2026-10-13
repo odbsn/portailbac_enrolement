@@ -8,6 +8,7 @@ export interface BacheliersToCampusen {
   id: string;
   annee: number;
   serie: string;
+  typeSession?: string;   // "Normale" | "Remplacement" (absent = Normale)
   numeroTable: string;
   prenoms: string;
   nom: string;
@@ -65,6 +66,7 @@ export interface SerieImportStat {
 export interface ImportLog {
   id: string;
   annee: number;
+  typeSession?: string;
   nomFichier: string;
   nombreFeuilles: number;
   nombreCandidats: number;
@@ -105,7 +107,7 @@ interface BacheliersToCampusenState {
   totalPages: number;
 
   fetchPage: (page?: number, size?: number, search?: string) => Promise<void>;
-  importer: (fichier: File, annee: number, remplacer?: boolean) => Promise<ImportLog>;
+  importer: (fichier: File, annee: number, remplacer?: boolean, typeSession?: string) => Promise<ImportLog>;
 
   setSearchTerm: (term: string) => void;
   setCurrentPage: (page: number) => void;
@@ -162,12 +164,13 @@ export const useBacheliersToCampusenStore = create<BacheliersToCampusenState>()(
         }
       },
 
-      importer: async (fichier: File, annee: number, remplacer = false) => {
+      importer: async (fichier: File, annee: number, remplacer = false, typeSession = 'Normale') => {
         set({ isSubmitting: true, error: null }, false, 'bacheliersCampusen/importer/pending');
         const formData = new FormData();
         formData.append('fichier', fichier);
         formData.append('annee', String(annee));
         formData.append('remplacer', String(remplacer));
+        formData.append('typeSession', typeSession);
 
         try {
           const response = await axiosInstance.post<ImportLog>(

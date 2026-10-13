@@ -85,17 +85,23 @@ public class ImportBacheliersService {
         COMMON_HEADERS.put("moy. déf.", BacheliersToCampusen::setMoyenneDefinitive);
     }
 
-    public ImportLog importer(MultipartFile fichier, int annee, boolean remplacer)
+    public static final String SESSION_NORMALE = "Normale";
+    public static final String SESSION_REMPLACEMENT = "Remplacement";
+
+    public ImportLog importer(MultipartFile fichier, int annee, boolean remplacer, String typeSession)
     {
+        String session = normaliserSession(typeSession);
+
         if (remplacer) {
-            long supprimes = candidatRepository.deleteByAnnee(annee);
-            importLogRepository.deleteByAnnee(annee);
-            log.info("Réimport complet de l'année {} : {} candidats supprimés", annee, supprimes);
+            Query parSession = Query.query(Criteria.where("annee").is(annee).andOperator(critereSession(session)));
+            long supprimes = mongoTemplate.remove(parSession, BacheliersToCampusen.class).getDeletedCount();
+            mongoTemplate.remove(parSession, ImportLog.class);
+            log.info("Réimport complet de l'année {} (session {}) : {} candidats supprimés", annee, session, supprimes);
         }
 
         // Ne relit un éventuel journal existant que si on ne vient pas de le supprimer :
         // évite en plus de faire planter l'import si un ancien document (schéma obsolète) subsiste.
-        Optional<ImportLog> logExistant = remplacer ? Optional.empty() : findLogExistantSansEchouer(annee);
+        Optional<ImportLog> logExistant = remplacer ? Optional.empty() : findLogExistantSansEchouer(annee, session);
 
         Map<String, SerieImportStat> parSerie = new LinkedHashMap<>();
         long total = 0, nouveaux = 0, misAJour = 0;
@@ -108,7 +114,7 @@ public class ImportBacheliersService {
                      .open(is)) {
 
             for (Sheet sheet : workbook) {
-                long[] r = importerFeuille(sheet, annee);
+                long[] r = importerFeuille(sheet, annee, session);
                 parSerie.put(sheet.getSheetName(), new SerieImportStat(r[0], r[1], r[2]));
                 total += r[0];
                 nouveaux += r[1];
@@ -123,6 +129,7 @@ public class ImportBacheliersService {
 
         ImportLog importLog = logExistant.orElseGet(ImportLog::new);
         importLog.setAnnee(annee);
+        importLog.setTypeSession(session);
         importLog.setNomFichier(fichier.getOriginalFilename());
         importLog.setNombreFeuilles(feuilles);
         importLog.setNombreCandidats(total);
@@ -130,26 +137,39 @@ public class ImportBacheliersService {
         importLog.setNombreMisAJour(misAJour);
         importLog.setCandidatsParSerie(parSerie);
         importLog.setDateImport(Instant.now());
-        log.info("Import terminé pour l'année {} : {} traités ({} nouveaux, {} mis à jour)",
-                annee, total, nouveaux, misAJour);
+        log.info("Import terminé pour l'année {} (session {}) : {} traités ({} nouveaux, {} mis à jour)",
+                annee, session, total, nouveaux, misAJour);
         return importLogRepository.save(importLog);
     }
 
-    /** Comme annee est indexé unique, un document illisible (ancien schéma) doit être
-     *  supprimé — pas seulement ignoré côté Java — sinon l'insertion du nouveau journal
-     *  échouerait sur une contrainte d'unicité. */
-    private Optional<ImportLog> findLogExistantSansEchouer(int annee) {
+    /** Type de session vide ou absent = session normale. */
+    private static String normaliserSession(String typeSession) {
+        if (typeSession == null || typeSession.isBlank()) return SESSION_NORMALE;
+        return typeSession.trim().toLowerCase().startsWith("rempla") ? SESSION_REMPLACEMENT : SESSION_NORMALE;
+    }
+
+    /** Les documents importés avant l'ajout du champ (typeSession absent) relèvent de la session normale. */
+    private static Criteria critereSession(String session) {
+        return SESSION_NORMALE.equals(session)
+                ? Criteria.where("typeSession").in(SESSION_NORMALE, null)
+                : Criteria.where("typeSession").is(session);
+    }
+
+    /** Un document illisible (ancien schéma) doit être supprimé — pas seulement ignoré
+     *  côté Java — sinon l'insertion du nouveau journal échouerait sur une contrainte d'unicité. */
+    private Optional<ImportLog> findLogExistantSansEchouer(int annee, String session) {
+        Query query = Query.query(Criteria.where("annee").is(annee).andOperator(critereSession(session)));
         try {
-            return importLogRepository.findByAnnee(annee);
+            return Optional.ofNullable(mongoTemplate.findOne(query, ImportLog.class));
         } catch (Exception e) {
-            log.warn("Journal d'import illisible pour l'année {} (schéma obsolète) — recréation. Cause : {}",
-                    annee, e.getMessage());
-            importLogRepository.deleteByAnnee(annee);
+            log.warn("Journal d'import illisible pour l'année {} (session {}, schéma obsolète) — recréation. Cause : {}",
+                    annee, session, e.getMessage());
+            mongoTemplate.remove(query, ImportLog.class);
             return Optional.empty();
         }
     }
 
-    private long[] importerFeuille(Sheet sheet, int annee) {
+    private long[] importerFeuille(Sheet sheet, int annee, String session) {
         String serie = sheet.getSheetName().trim();
         List<String> headers = null;
         List<BacheliersToCampusen> batch = new ArrayList<>(BATCH_SIZE);
@@ -161,26 +181,26 @@ public class ImportBacheliersService {
                 headers = lireEntetes(row);
                 continue;
             }
-            BacheliersToCampusen c = lireCandidat(row, headers, annee, serie);
+            BacheliersToCampusen c = lireCandidat(row, headers, annee, serie, session);
             if (c == null) continue;
             batch.add(c);
             if (batch.size() >= BATCH_SIZE) {
-                long[] r = upsertBatch(batch);
+                long[] r = upsertBatch(batch, session);
                 total += r[0]; nouveaux += r[1]; misAJour += r[2];
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            long[] r = upsertBatch(batch);
+            long[] r = upsertBatch(batch, session);
             total += r[0]; nouveaux += r[1]; misAJour += r[2];
         }
         return new long[]{total, nouveaux, misAJour};
     }
 
-    /** Vérifie l'existence par numeroTable seul (données sessionnières : un numéro de table
-     *  n'appartient qu'à une session) puis met à jour ou insère en un seul bulk write.
+    /** Vérifie l'existence par numeroTable au sein du type de session (normale / remplacement)
+     *  puis met à jour ou insère en un seul bulk write.
      *  Les lignes sans numeroTable (rares) sont simplement insérées, sans vérification. */
-    private long[] upsertBatch(List<BacheliersToCampusen> batch) {
+    private long[] upsertBatch(List<BacheliersToCampusen> batch, String session) {
         List<BacheliersToCampusen> avecNumero = new ArrayList<>();
         List<BacheliersToCampusen> sansNumero = new ArrayList<>();
         for (BacheliersToCampusen c : batch) {
@@ -192,7 +212,7 @@ public class ImportBacheliersService {
                 .collect(Collectors.toSet());
 
         Set<String> existants = numerosTable.isEmpty() ? Collections.emptySet() : new HashSet<>(mongoTemplate.findDistinct(
-                Query.query(Criteria.where("numeroTable").in(numerosTable)),
+                Query.query(Criteria.where("numeroTable").in(numerosTable).andOperator(critereSession(session))),
                 "numeroTable", BacheliersToCampusen.class, String.class));
 
         long nouveaux = 0, misAJour = 0;
@@ -200,7 +220,8 @@ public class ImportBacheliersService {
         if (!avecNumero.isEmpty()) {
             BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, BacheliersToCampusen.class);
             for (BacheliersToCampusen c : avecNumero) {
-                Query query = Query.query(Criteria.where("numeroTable").is(c.getNumeroTable()));
+                Query query = Query.query(Criteria.where("numeroTable").is(c.getNumeroTable())
+                        .andOperator(critereSession(session)));
                 bulkOps.upsert(query, construireUpdate(c));
                 if (existants.contains(c.getNumeroTable())) {
                     misAJour++;
@@ -220,6 +241,7 @@ public class ImportBacheliersService {
     private Update construireUpdate(BacheliersToCampusen c) {
         return new Update()
                 .set("serie", c.getSerie())
+                .set("typeSession", c.getTypeSession())
                 .set("prenoms", c.getPrenoms())
                 .set("nom", c.getNom())
                 .set("dateNaissance", c.getDateNaissance())
@@ -286,12 +308,13 @@ public class ImportBacheliersService {
         return headers;
     }
 
-    private BacheliersToCampusen lireCandidat(Row row, List<String> headers, int annee, String serie) {
+    private BacheliersToCampusen lireCandidat(Row row, List<String> headers, int annee, String serie, String session) {
         if (estVide(row)) return null;
 
         BacheliersToCampusen c = new BacheliersToCampusen();
         c.setAnnee(annee);
         c.setSerie(serie);
+        c.setTypeSession(session);
 
         for (int i = 0; i < headers.size(); i++) {
             String header = headers.get(i);

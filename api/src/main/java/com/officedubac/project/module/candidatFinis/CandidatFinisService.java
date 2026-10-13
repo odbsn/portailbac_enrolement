@@ -47,6 +47,7 @@ public interface CandidatFinisService {
             String sexe,
             String nationalite,
             String etablissementCode,
+            Boolean remplacement,
             Pageable pageable);
     CandidatFinisResponse getByIdByUtilisateurConnecte(String id);
     PageResponse<CandidatFinisResponse> getBySerieByUtilisateurConnecte(String serieCode, Pageable pageable);
@@ -72,5 +73,5 @@ Mono<String> regenerateConvocation(String numeroTable);
     PageResponse<CandidatFinisResponse> getWithFiltersByInspectionAcademieConnectee(
             String keyword, String serie, String jury, String typeCandidat,
             String statutResultat, String sexe, String nationalite,
-            String etablissementCode, Pageable pageable);
+            String etablissementCode, Boolean remplacement, Pageable pageable);
 }

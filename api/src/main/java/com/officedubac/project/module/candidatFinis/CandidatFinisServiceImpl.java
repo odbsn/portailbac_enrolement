@@ -563,7 +563,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getAllByUtilisateurConnecte(Pageable pageable) {
         log.info("Fetching all candidats of connected user establishment with epreuves");
-        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null,null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, null, null, null, null, null,null,null,null, pageable);
     }
 
     @Override
@@ -577,6 +577,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String sexe,
             String nationalite,
             String etablissementCode,
+            Boolean remplacement,
             Pageable pageable) {
 
         log.info("Fetching candidats of connected user establishment with filters and epreuves");
@@ -584,7 +585,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         Etablissement etablissement = getEtablissementUtilisateurConnecte();
 
         Query query =  buildFilterQuery(keyword, serie, jury, typeCandidat, numeroDossier,
-                statutResultat, sexe, nationalite, etablissementCode, null);
+                statutResultat, sexe, nationalite, etablissementCode, remplacement);
         query.addCriteria(Criteria.where("etablissement.id").is(etablissement.getId()));
 
         long total = mongoTemplate.count(query, CandidatFinis.class, COLLECTION_NAME);
@@ -600,13 +601,13 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     @Override
     public PageResponse<CandidatFinisResponse> getBySerieByUtilisateurConnecte(String serieCode, Pageable pageable) {
         log.info("Fetching candidats by serie of connected user establishment with epreuves: {}", serieCode);
-        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null,null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, serieCode, null, null, null, null, null,null,null,null, pageable);
     }
 
     @Override
     public PageResponse<CandidatFinisResponse> getByJuryByUtilisateurConnecte(String jury, Pageable pageable) {
         log.info("Fetching candidats by jury of connected user establishment with epreuves: {}", jury);
-        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null,null,null, pageable);
+        return getWithFiltersByUtilisateurConnecte(null, null, jury, null, null, null, null,null,null,null, pageable);
     }
 
     @Override
@@ -965,7 +966,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
     public PageResponse<CandidatFinisResponse> getAllByInspectionAcademieConnectee(Pageable pageable) {
         log.info("Fetching all candidats of connected user's inspection académie");
         return getWithFiltersByInspectionAcademieConnectee(
-                null, null, null, null, null, null, null, null, pageable);
+                null, null, null, null, null, null, null, null, null, pageable);
     }
 
     @Override
@@ -978,6 +979,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
             String sexe,
             String nationalite,
             String etablissementCode,
+            Boolean remplacement,
             Pageable pageable) {
 
         log.info("Fetching candidats of connected user's inspection académie with filters");
@@ -985,7 +987,7 @@ public Etablissement getEtablissementUtilisateurConnecte() {
         InspectionAcademie inspectionAcademie = getInspectionAcademieUtilisateurConnecte();
 
         Query query = buildFilterQuery(keyword, serie, jury, null, typeCandidat,
-                statutResultat, sexe, nationalite, etablissementCode, null);
+                statutResultat, sexe, nationalite, etablissementCode, remplacement);
         query.addCriteria(Criteria.where("etablissement.inspectionAcademie._id")
                 .is(new ObjectId(inspectionAcademie.getId())));
 

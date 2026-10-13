@@ -57,6 +57,7 @@ export default function ImportBacheliersModal({ open, onClose, defaultAnnee, onS
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [annee, setAnnee] = useState<number>(defaultAnnee ?? new Date().getFullYear());
   const [remplacer, setRemplacer] = useState(false);
+  const [typeSession, setTypeSession] = useState<string>("Normale");
 
   const importer = useBacheliersToCampusenStore((s) => s.importer);
 
@@ -92,7 +93,7 @@ export default function ImportBacheliersModal({ open, onClose, defaultAnnee, onS
     }, 200);
 
     try {
-      const data = await importer(file, annee, remplacer);
+      const data = await importer(file, annee, remplacer, typeSession);
       clearInterval(interval);
       setProgress(100);
       setResult(data);
@@ -112,6 +113,7 @@ export default function ImportBacheliersModal({ open, onClose, defaultAnnee, onS
     setResult(null);
     setErrorMsg(null);
     setRemplacer(false);
+    setTypeSession("Normale");
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -167,6 +169,22 @@ export default function ImportBacheliersModal({ open, onClose, defaultAnnee, onS
                     fontSize: 13, width: 140,
                   }}
                 />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                  Type de session *
+                </label>
+                <select
+                  value={typeSession}
+                  onChange={(e) => setTypeSession(e.target.value)}
+                  style={{
+                    padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb",
+                    fontSize: 13, width: 200, background: "#fff",
+                  }}
+                >
+                  <option value="Normale">Session normale</option>
+                  <option value="Remplacement">Session de remplacement</option>
+                </select>
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#374151", paddingBottom: 8 }}>
                 <input type="checkbox" checked={remplacer} onChange={(e) => setRemplacer(e.target.checked)} />

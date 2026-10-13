@@ -258,7 +258,7 @@ public class ConvocationPdfService {
         leftColumn.add(createValue(value(c.getLieuNaissance()), boldFont));
 
         String etabName = c.getEtablissement() != null ? c.getEtablissement().getName() : "-";
-        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()) : "-";
+        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()).toUpperCase() : "-";
         leftColumn.add(createLabel("Etablissement fréquenté (Code)", normalFont));
         leftColumn.add(createValue(etabName + " (" + etabCode + ")", boldFont));
 
@@ -872,7 +872,7 @@ public class ConvocationPdfService {
         leftColumn.add(createValue(value(c.getLieuNaissance()), boldFont));
 
         String etabName = c.getEtablissement() != null ? c.getEtablissement().getName() : "-";
-        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()) : "-";
+        String etabCode = c.getEtablissement() != null ? value(c.getEtablissement().getCode()).toUpperCase() : "-";
         leftColumn.add(createLabel("Etablissement fréquenté (Code)", normalFont));
         leftColumn.add(createValue(etabName + " (" + etabCode + ")", boldFont));
 

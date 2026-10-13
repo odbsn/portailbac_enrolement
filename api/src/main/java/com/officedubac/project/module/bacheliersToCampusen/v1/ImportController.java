@@ -22,7 +22,8 @@ public class ImportController {
     public ResponseEntity<ImportLog> importer(
             @RequestParam("fichier") MultipartFile fichier,
             @RequestParam("annee") int annee,
-            @RequestParam(value = "remplacer", defaultValue = "false") boolean remplacer)
+            @RequestParam(value = "remplacer", defaultValue = "false") boolean remplacer,
+            @RequestParam(value = "typeSession", required = false) String typeSession)
     {
 
         if (fichier.isEmpty()) {
@@ -32,7 +33,7 @@ public class ImportController {
         if (nom == null || !nom.toLowerCase().endsWith(".xlsx")) {
             throw new IllegalArgumentException("Seuls les fichiers .xlsx sont acceptés");
         }
-        ImportLog resultat = importBacheliersService.importer(fichier, annee, remplacer);
+        ImportLog resultat = importBacheliersService.importer(fichier, annee, remplacer, typeSession);
         return ResponseEntity.status(HttpStatus.CREATED).body(resultat);
     }
 }
